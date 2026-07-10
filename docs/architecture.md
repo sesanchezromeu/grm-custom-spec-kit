@@ -4,61 +4,41 @@
 
 GRM Custom Spec Kit is a corporate customization of Spec Kit that introduces governance, Product Driven Development and controlled adoption of Spec Driven Development without maintaining a fork of the upstream product.
 
-Design principle:
+Design principles:
 
-```text
-Customize around Spec Kit
-Never modify Spec Kit core
-```
+- Customize around Spec Kit.
+- Never modify Spec Kit core.
+- PBI as the functional source of truth.
+- Maximum reuse of native Spec Kit capabilities.
 
 ---
 
-## 2. Architecture
+## 2. Reference Architecture
 
 ```text
-+----------------+
-|  Product Owner |
-+--------+-------+
-         |
-         v
-+----------------+
-| PBI Markdown   |
-+--------+-------+
-         |
-         v
-+----------------+
-| /corp.load     |
-+--------+-------+
-         |
-         v
-+----------------+
-| active-pbi.md  |
-+--------+-------+
-         |
-         v
-+----------------+
-| /corp.assess   |
-+--------+-------+
-         |
-         v
-+----------------+
-| /corp.plan     |
-+--------+-------+
-         |
-         v
-+----------------+
-| /speckit.plan  |
-+--------+-------+
-         |
-         v
-+----------------+
-| /speckit.tasks |
-+--------+-------+
-         |
-         v
-+----------------+
-|/speckit.implement|
-+----------------+
+Product Owner
+      ↓
+PBI Markdown
+      ↓
+/corp.load
+      ↓
+active-pbi.md
+      ↓
+/corp.assess
+      ↓
+/corp.plan
+      ↓
+/speckit.plan
+      ↓
+/speckit.tasks
+      ↓
+/speckit.implement
+```
+
+Governance principle:
+
+```text
+No Plan Without Assessment
 ```
 
 ---
@@ -66,39 +46,87 @@ Never modify Spec Kit core
 ## 3. Repository Structure
 
 ```text
-.github/
-├── agents/
-├── prompts/
+.github/        ← Validated Copilot runtime
+.specify/       ← Spec Kit runtime
+.vscode/
 
 docs/
 extensions/
 presets/
-pilots/
 samples/
 ```
 
-### Agents
+### .github
 
-Contain command behavior.
+Contains the validated GitHub Copilot runtime used during execution.
 
-### Prompts
+### .specify
 
-Contain command invocation definitions.
+Contains Spec Kit runtime artifacts:
 
-### Docs
+- integrations
+- scripts
+- templates
+- workflows
+- constitution
 
-Project knowledge base.
+### docs
+
+Knowledge base and project documentation.
+
+### extensions
+
+Formal definition of GRM custom commands.
+
+### presets
+
+Formal definition of governance overrides.
 
 ---
 
-## 4. Corporate Commands
+## 4. Runtime Strategy
 
-### corp.load
+Current POC intentionally maintains two layers.
+
+### Runtime Layer
+
+```text
+.github/
+```
+
+Contains the validated runtime currently executed by GitHub Copilot.
+
+### Customization Layer
+
+```text
+extensions/
+presets/
+```
+
+Contains the formal source structure of the GRM customization.
+
+### Future Evolution
+
+A future installation or synchronization mechanism should make:
+
+```text
+extensions + presets
+        ↓
+      .github
+```
+
+eliminating manual duplication.
+
+---
+
+## 5. Corporate Commands
+
+### /corp.load
 
 Purpose:
 
 - Load approved PBI.
-- Create active context.
+- Generate active context.
 
 Output:
 
@@ -106,7 +134,7 @@ Output:
 .specify/memory/active-pbi.md
 ```
 
-### corp.assess
+### /corp.assess
 
 Purpose:
 
@@ -115,14 +143,14 @@ Purpose:
 
 Characteristics:
 
-- Read only.
-- No artifacts generated.
+- Read-only.
+- No artifact generation.
 
-### corp.plan
+### /corp.plan
 
 Purpose:
 
-- Corporate bootstrap.
+- Generate corporate bootstrap.
 
 Output:
 
@@ -138,15 +166,13 @@ Implemented in:
 speckit.plan.agent.md
 ```
 
-Blocks execution if the mandatory corporate flow has not been followed.
+Blocks planning if the mandatory corporate workflow has not been followed.
 
 ---
 
-## 5. Design Decisions
+## 6. Design Decisions
 
 ### D01 - No Fork
-
-Reason:
 
 - Easier upgrades.
 - Lower maintenance.
@@ -154,22 +180,16 @@ Reason:
 
 ### D02 - PBI as Source of Truth
 
-Reason:
+- Product ownership alignment.
+- Full traceability.
 
-- Traceability.
-- Alignment with Product Ownership.
-
-### D03 - Read-Only Analysis
+### D03 - Read-Only Assessment
 
 Applied to:
 
 ```text
 corp.assess
 ```
-
-Reason:
-
-Prevent uncontrolled modifications.
 
 ### D04 - Bootstrap Pattern
 
@@ -179,15 +199,13 @@ Applied to:
 corp.plan
 ```
 
-Reason:
-
-Reuse native Spec Kit planning capabilities.
+Allows reuse of native Spec Kit planning.
 
 ---
 
-## 6. Governance Model
+## 7. Governance Model
 
-Allowed:
+### Allowed
 
 ```text
 corp.load
@@ -198,7 +216,7 @@ speckit.tasks
 speckit.implement
 ```
 
-Blocked:
+### Blocked
 
 ```text
 speckit.specify
@@ -207,44 +225,70 @@ speckit.clarify
 
 ---
 
-## 7. Key Findings from POC
+## 8. Validated Scenarios
 
-- Custom commands are viable.
-- GitHub Copilot agents can enforce workflow rules.
-- No fork is required.
-- PBI-driven workflow is feasible.
-- Native planning can be reused.
-- Governance can be applied using extensions and prompts.
+Validated successfully:
+
+```text
+specify init --here
+        ↓
+Apply GRM customization
+        ↓
+corp.load
+        ↓
+corp.assess
+        ↓
+corp.plan
+        ↓
+speckit.plan
+```
+
+Validation performed using multiple PBIs and a clean Spec Kit installation.
 
 ---
 
-## 8. Technical Debt
+## 9. Key Findings
+
+- Custom commands are viable.
+- Governance can be enforced through Copilot agents.
+- No fork is required.
+- PBI-driven workflows are feasible.
+- Native planning can be reused.
+- The solution is portable and reproducible.
+
+---
+
+## 10. Technical Debt
 
 Current limitations:
 
-- Local markdown PBIs only.
+- Markdown PBI source only.
 - No Azure DevOps integration.
 - No MCP integration.
-- Manual validation activities remain.
+- Runtime/customization duplication.
+- Additional Spec Kit commands not yet governed.
 
 ---
 
-## 9. Future Evolution
+## 11. Roadmap
 
-### Phase 2
+### v0.2
+
+- Installation model refinement.
+- Runtime synchronization.
+
+### v0.3
 
 - Azure DevOps integration.
 - MCP integration.
-- Improved reporting.
 
-### Phase 3
+### v0.4
 
-- corp.doc command.
-- Delivery report generation.
-- Delta management support.
+- corp.doc.
+- Delivery reporting.
 
-### Phase 4
+### v1.0
 
-- Enterprise rollout.
-- Training materials.
+- Enterprise-ready framework.
 - Governance dashboards.
+- Training materials.

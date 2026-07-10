@@ -478,3 +478,111 @@ El flujo MVP protegido queda como:
 /speckit.tasks
 ↓
 /speckit.implement
+
+##### H-21
+
+La personalización corporativa almacenada en grm-custom-spec-kit es portable y reproducible sobre una instalación limpia de Spec Kit.
+
+Resultado:
+Validado.
+
+Evidencia:
+
+specify init --here
+↓
+Aplicación de la personalización GRM
+↓
+corp.load
+↓
+corp.assess
+↓
+corp.plan
+↓
+speckit.plan
+
+ejecutado correctamente en el proyecto grm-validation.
+
+Impacto:
+
+Se elimina la dependencia del entorno original corp-pilot.
+
+Conclusión:
+
+La POC puede ser utilizada y validada por terceros utilizando únicamente el repositorio grm-custom-spec-kit.
+
+##### H-22
+
+corp.plan genera un bootstrap mínimo suficiente para permitir la ejecución satisfactoria de speckit.plan.
+
+Resultado:
+Validado.
+
+Evidencia:
+
+spec.md generado por corp.plan fue aceptado por speckit.plan, generando:
+
+- plan.md
+- research.md
+- data-model.md
+- quickstart.md
+- contracts/
+
+Impacto:
+
+No es necesario implementar una versión corporativa de speckit.plan para el MVP.
+
+Conclusión:
+
+La estrategia de bootstrap mínimo queda validada.
+
+##### H-23
+
+La versión actual de Spec Kit incorpora comandos estándar adicionales no contemplados inicialmente durante la POC.
+
+Comandos identificados:
+
+- speckit.analyze
+- speckit.checklist
+- speckit.converge
+- speckit.taskstoissues
+
+Resultado:
+Observación técnica.
+
+Impacto:
+
+No bloqueante para el MVP.
+
+Acción futura:
+
+Evaluar alineamiento y gobernanza de estos comandos dentro del modelo corporativo.
+
+##### H-24
+
+grm-custom-spec-kit evoluciona desde repositorio de personalización hacia una POC operativa completa.
+
+Resultado:
+Validado.
+
+Componentes incluidos:
+
+- Runtime Spec Kit (.specify)
+- Runtime Copilot (.github)
+- Presets
+- Extensions
+- Documentación
+- Samples
+- Caso de validación reproducible
+
+Conclusión:
+
+El repositorio puede utilizarse como base de adopción corporativa y validación por terceros.
+
+
+## TODOS y Deuda técnica pendiente
+
+DELTA-02
+Eliminar duplicidad runtime/customization.
+
+DELTA-03
+Gobernar analyze, checklist, converge y taskstoissues.

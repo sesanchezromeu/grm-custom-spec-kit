@@ -1,0 +1,10 @@
+id: grm-corporate-governance
+name: GRM Corporate Governance Preset
+version: 0.1.0
+description: Corporate governance preset that protects the Spec Kit workflow and enforces PBI-driven development.
+author: GRM
+overrides:
+  agents:
+    - speckit.specify.agent.md
+    - speckit.clarify.agent.md
+    - speckit.plan.agent.md

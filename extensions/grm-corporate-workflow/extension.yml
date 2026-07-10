@@ -1,0 +1,9 @@
+id: grm-corporate-workflow
+name: GRM Corporate Workflow
+version: 0.1.0
+description: Corporate Spec Kit workflow extension providing PBI-based entry commands for GRM.
+author: GRM
+commands:
+  - corp.load
+  - corp.assess
+  - corp.plan

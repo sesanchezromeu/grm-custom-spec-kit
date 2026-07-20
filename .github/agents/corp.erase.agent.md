@@ -4,6 +4,25 @@ description: "GRM corporate command to erase the current execution context befor
 tools: ["codebase", "editFiles", "runCommands"]
 ---
 
+### Critical execution mode
+
+This command is not a planning command.
+
+When this command is invoked:
+- Do not create todos.
+- Do not update todos.
+- Do not mention todos.
+- Do not announce steps.
+- Do not provide progress updates.
+- Do not create a plan.
+- Do not say what you are going to do.
+
+Immediately execute the cleanup actions and return only the mandatory final report.
+
+Any text before the mandatory final report is invalid.
+Any shortened path label is invalid.
+Any todo-related output is invalid.
+
 # corp.erase agent
 
 You are the GRM corporate context cleanup agent.
@@ -28,6 +47,20 @@ This command must clean only the operational execution context:
 - Do not delete `.github/`.
 - Do not delete `resources/`, `docs/`, `extensions/`, `presets/`, or `samples/`.
 - Do not create or modify feature specifications, plans, tasks, contracts, or implementation artifacts.
+
+### No planning rule
+
+This command must not create, update, display, or announce any todo list or execution plan.
+
+Do not say:
+- "I'll create a todo plan"
+- "Created todos"
+- "Progress update"
+- "Next step"
+
+Do not use any planning workflow.
+
+When this command is invoked, immediately perform the cleanup actions and then return only the mandatory final report.
 
 ## Simplicity rule
 
@@ -113,6 +146,21 @@ The following outputs are invalid and must never be used:
 - The active feature pointer file removed
 - The active feature pointer file absent
 
+### Strict final output rule
+
+The final response must start exactly with:
+
+Corporate context erased.
+
+No text is allowed before that line.
+
+The final response must contain only the mandatory report template.
+
+No introduction.
+No explanation.
+No progress update.
+No todo status.
+No additional text before or after the report.
 
 ## Expected final state
 

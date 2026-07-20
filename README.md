@@ -34,7 +34,11 @@ The POC validates that it is possible to:
 # Corporate Workflow
 
 ```text
+/corp.erase (optional manual execution)
+        ↓
 /corp.load --file <pbi.md>
+        ↓
+(corporate cleanup executed automatically)
         ↓
 /corp.assess
         ↓
@@ -53,6 +57,31 @@ Governance principle:
 No Plan Without Assessment
 ```
 
+## Context Management
+
+To avoid contamination between different PBI executions, the GRM workflow introduces an explicit context management mechanism.
+
+### /corp.erase
+
+Purpose:
+
+- Reset `.specify/memory/active-pbi.md`
+- Clean `features/`
+- Remove `.specify/feature.json`
+
+This command can be executed manually when required.
+
+### Automatic cleanup
+
+`/corp.load` automatically performs the same cleanup procedure before loading a new PBI.
+
+This guarantees:
+
+- Clean execution context
+- No residual active feature references
+- No previous PBI contamination
+- Repeatable execution results
+
 ---
 
 # Repository Structure
@@ -65,9 +94,6 @@ No Plan Without Assessment
 docs/
 ├── architecture.md
 ├── discovery-log.md
-├── session-resume-20260708.md
-├── session-resume-20260708-parte1.md
-├── session-resume-20260708-parte2.md
 └── user-guide.md
 
 extensions/
@@ -95,5 +121,7 @@ extensions/grm-corporate-workflow
 
 Provides new corporate commands:
 
+- /corp.erase
 - /corp.load
 - /corp.assess
+- /corp.plan

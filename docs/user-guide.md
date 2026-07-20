@@ -24,6 +24,7 @@ v0.1.0-poc
 
 Validated:
 
+- corp.erase
 - corp.load
 - corp.assess
 - corp.plan
@@ -77,13 +78,15 @@ Execute the workflow.
 ## 4. Corporate Workflow
 
 ```text
-/corp.load --file <pbi.md>
+/corp.erase (optional)
+        ↓
+/corp.load
+        ↓
+(auto-cleanup)
         ↓
 /corp.assess
         ↓
 /corp.plan
-        ↓
-/speckit.plan
         ↓
 /speckit.tasks
         ↓
@@ -121,9 +124,32 @@ No Plan Without Assessment
 
 ## 6. Corporate Commands
 
+### /corp.erase
+
+Erases the current execution context.
+
+Actions:
+
+- Reset `.specify/memory/active-pbi.md`
+- Clean `features/`
+- Remove `.specify/feature.json`
+
+Use cases:
+
+- Manual workspace reset
+- Testing
+- Troubleshooting
+- Validation scenarios
+
 ### /corp.load
 
 Loads an approved PBI.
+
+Before loading the PBI, the command automatically:
+
+- Resets active context
+- Cleans features/
+- Removes .specify/feature.json
 
 Output:
 
@@ -210,6 +236,8 @@ Prevent uncontrolled functional specifications.
 - Always execute corp.assess.
 - Resolve critical risks before planning.
 - Preserve traceability.
+- Start each new validation cycle from a clean context.
+- Use corp.erase when troubleshooting or validating command behavior.
 
 ---
 
@@ -249,6 +277,8 @@ Verify:
 - No Azure DevOps integration.
 - No MCP integration.
 - Runtime duplication between .github and presets/extensions.
+- GitHub Copilot may display internal execution progress messages.
+- File links may appear shortened in the UI although they reference the correct repository paths.
 
 ---
 

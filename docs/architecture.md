@@ -20,6 +20,8 @@ Product Owner
       ↓
 PBI Markdown
       ↓
+/corp.erase (optional)
+      ↓
 /corp.load
       ↓
 active-pbi.md
@@ -121,18 +123,36 @@ eliminating manual duplication.
 
 ## 5. Corporate Commands
 
+### /corp.erase
+
+Purpose:
+
+- Clean execution context
+- Prevent cross-PBI contamination
+- Ensure reproducible workflow execution
+
+Managed artifacts:
+
+- `.specify/memory/active-pbi.md`
+- `features/`
+- `.specify/feature.json`
+
 ### /corp.load
 
 Purpose:
 
-- Load approved PBI.
-- Generate active context.
+- Ensure clean execution context
+- Load approved PBI
+- Generate active context
 
 Output:
 
-```text
 .specify/memory/active-pbi.md
-```
+
+Additional behavior:
+
+- Automatically performs the equivalent cleanup of `/corp.erase`
+- Verifies active context before reporting success
 
 ### /corp.assess
 
@@ -201,6 +221,20 @@ corp.plan
 
 Allows reuse of native Spec Kit planning.
 
+### D05 - Explicit Context Management
+
+Applied to:
+
+corp.erase
+corp.load
+
+Rationale:
+
+- Eliminate cross-execution contamination
+- Improve repeatability
+- Simplify validation scenarios
+- Increase traceability
+
 ---
 
 ## 7. Governance Model
@@ -208,6 +242,7 @@ Allows reuse of native Spec Kit planning.
 ### Allowed
 
 ```text
+corp.erase
 corp.load
 corp.assess
 corp.plan
@@ -230,9 +265,7 @@ speckit.clarify
 Validated successfully:
 
 ```text
-specify init --here
-        ↓
-Apply GRM customization
+corp.erase
         ↓
 corp.load
         ↓
@@ -255,6 +288,8 @@ Validation performed using multiple PBIs and a clean Spec Kit installation.
 - PBI-driven workflows are feasible.
 - Native planning can be reused.
 - The solution is portable and reproducible.
+- Context contamination can be eliminated through automated cleanup.
+- Runtime context management improves repeatability of PBI-driven workflows.
 
 ---
 

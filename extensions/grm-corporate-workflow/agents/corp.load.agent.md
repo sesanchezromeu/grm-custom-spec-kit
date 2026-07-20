@@ -44,10 +44,16 @@ If the user provides unsupported input, stop and explain that the MVP only suppo
 ## Core principle
 
 The workflow must start from an approved Product Backlog Item.
-
 The developer must not create a functional specification from a free-form idea.
-
 The loaded PBI is the functional source of truth.
+
+## Corporate workflow
+
+1. Ensure a clean corporate execution context before loading the specified PBI
+2. Load the specified PBI
+3. Update .specify/memory/active-pbi.md
+4. Verify the update was successful
+5. Report results
 
 ## Source file policy
 
@@ -82,20 +88,36 @@ Do not create a sample file.
 
 Do not continue with synthetic content.
 
-## Mandatory execution order
+### Mandatory execution order
 
-When invoked with `/corp.load --file <path-to-pbi-markdown>`, you MUST execute these steps in order:
+When invoked with /corp.load --file <path-to-pbi-markdown>, you MUST execute these steps in order:
 
-1. Read the source Markdown file.
-2. Create or overwrite `.specify/memory/active-pbi.md`.
-3. Re-read `.specify/memory/active-pbi.md`.
-4. Verify that the `## Source` section contains the exact input file path.
-5. Verify that the loaded title or PBI ID corresponds to the source file.
-6. Only then report success.
+1. Perform mandatory corporate cleanup before loading the new PBI:
+   - Reset `.specify/memory/active-pbi.md`.
+   - Delete all files and subdirectories inside `features/`.
+   - Recreate `features/` if needed.
+   - Remove `.specify/feature.json` if it exists.
+   - Verify that cleanup completed successfully.
 
-If `.specify/memory/active-pbi.md` is not updated, STOP and report:
+2. Read the source Markdown file.
 
-`PBI load failed: active-pbi.md was not updated. Do not continue with /corp.assess, /corp.plan or /speckit.plan.`
+3. Create or overwrite `.specify/memory/active-pbi.md` with the loaded PBI content.
+
+4. Re-read `.specify/memory/active-pbi.md`.
+
+5. Verify that the `## Source` section contains the exact input file path.
+
+6. Verify that the loaded title or PBI ID corresponds to the source file.
+
+7. Only then report success.
+
+If cleanup fails, STOP and report:
+
+Corporate cleanup failed: PBI was not loaded. Resolve the cleanup issue and run `/corp.load --file <path-to-pbi-markdown>` again.
+
+If `.specify/memory/active-pbi.md` is not updated after loading, STOP and report:
+
+PBI load failed: active-pbi.md was not updated. Do not continue with /corp.assess, /corp.plan or /speckit.plan.
 
 ## Read behavior
 
@@ -133,23 +155,38 @@ Readiness will be assessed later by:
 
 `/corp.assess`
 
-## Output artifact policy
+### Output artifact policy
 
-This command may write only one artifact:
+This command may modify only the operational execution context required to guarantee a clean PBI load.
 
-`.specify/memory/active-pbi.md`
+Allowed write locations:
 
-It may create the `.specify/memory` directory if needed.
+- `.specify/memory/active-pbi.md`
+- `features/`
+- `.specify/feature.json`
 
-It must not create or modify any other files.
+Allowed operations:
+
+- create `.specify/memory/` if needed,
+- create or overwrite `.specify/memory/active-pbi.md`,
+- delete all generated contents under `features/`,
+- recreate `features/` if needed,
+- delete `.specify/feature.json` if it exists.
 
 Forbidden write locations include:
 
-- `features/`
 - `.specify/specs/`
 - `.specify/templates/`
+- `.specify/scripts/`
 - `.github/prompts/`
 - `.github/agents/`
+- `docs/`
+- `extensions/`
+- `presets/`
+- `samples/`
+- `resources/`
+
+The source PBI Markdown file must remain read-only.
 
 ## Real execution requirement
 

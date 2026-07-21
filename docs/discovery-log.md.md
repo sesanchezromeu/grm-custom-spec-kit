@@ -578,6 +578,157 @@ Conclusión:
 
 El repositorio puede utilizarse como base de adopción corporativa y validación por terceros.
 
+##### H-28
+
+Speckit añade actividades de calidad durante la generación de tareas aunque no formen parte explícita del alcance funcional del PBI.
+
+Ejemplos observados:
+
+- Accessibility review
+- Follow-up improvements
+
+Resultado:
+Validado.
+
+Impacto:
+Incrementa la calidad del backlog generado sin modificar el alcance funcional aprobado.
+
+Conclusión:
+Comportamiento aceptado y alineado con la gobernanza GRM.
+
+---
+
+##### H-29
+
+Speckit mantiene trazabilidad entre Acceptance Criteria y tareas de implementación.
+
+Resultado:
+Validado.
+
+Evidencia:
+
+quickstart.md
+↓
+tasks.md
+↓
+validación de criterios de aceptación
+
+Impacto:
+Refuerza la trazabilidad end-to-end del flujo corporativo.
+
+Conclusión:
+La generación de tareas mantiene alineamiento con el PBI original.
+
+---
+
+##### H-30
+
+speckit.implement genera código fuente ejecutable a partir de los artefactos generados durante el flujo.
+
+Resultado:
+Validado.
+
+Evidencia:
+
+- index.html
+- styles.css
+- app.js
+
+Impacto:
+La POC deja de ser exclusivamente documental y demuestra capacidad real de generación de software.
+
+Conclusión:
+La integración con Spec Kit permite llegar hasta una implementación funcional.
+
+---
+
+##### H-31
+
+speckit.implement genera pruebas automatizadas aunque la estrategia definida inicialmente fuera principalmente manual.
+
+Resultado:
+Validado.
+
+Evidencia:
+
+- package.json
+- tests/unit/calculator.test.js
+
+Impacto:
+Mejora la calidad y verificabilidad de los entregables.
+
+Conclusión:
+La generación automática de pruebas aporta valor adicional al flujo.
+
+---
+
+##### H-32
+
+Persisten incidencias relacionadas con PowerShell Execution Policy durante la ejecución de scripts internos de Spec Kit.
+
+Resultado:
+Observación técnica.
+
+Mitigación observada:
+
+PowerShell ExecutionPolicy Bypass
+
+Impacto:
+No bloqueante.
+
+Acción futura:
+Evaluar si debe documentarse explícitamente en guías de instalación o troubleshooting.
+
+---
+
+##### H-33
+
+La ejecución de aplicaciones generadas mediante file:// puede producir comportamientos distintos a la ejecución mediante servidor local.
+
+Resultado:
+Validado.
+
+Evidencia:
+
+La calculadora no mostró el comportamiento esperado al ejecutarse directamente desde el sistema de archivos, pero funcionó correctamente mediante:
+
+python -m http.server 8000
+
+Impacto:
+Las validaciones funcionales deben realizarse mediante servidor local.
+
+Conclusión:
+Añadir esta recomendación a la documentación de usuario.
+
+---
+
+##### H-34
+
+Se valida por primera vez el flujo corporativo completo desde un PBI aprobado hasta una implementación funcional ejecutable.
+
+Resultado:
+Validado.
+
+Flujo validado:
+
+corp.load
+↓
+corp.assess
+↓
+corp.plan
+↓
+speckit.plan
+↓
+speckit.tasks
+↓
+speckit.implement
+
+Impacto:
+Confirma la viabilidad de la estrategia GRM basada en personalización de Spec Kit sin fork.
+
+Conclusión:
+La POC alcanza el estado de validación end-to-end completa.
+
 
 ## TODOS y Deuda técnica pendiente
 

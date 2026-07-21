@@ -47,6 +47,9 @@ This command must clean only the operational execution context:
 - Do not delete `.github/`.
 - Do not delete `resources/`, `docs/`, `extensions/`, `presets/`, or `samples/`.
 - Do not create or modify feature specifications, plans, tasks, contracts, or implementation artifacts.
+- Remove any generated as-built documentation files from previous corporate documentation runs, including:
+  - features/**/delivery-doc.md
+
 
 ### No planning rule
 
@@ -82,8 +85,9 @@ The command must:
 3. Ensure `features/` exists.
 4. Delete all files and subdirectories inside `features/`.
 5. Remove `.specify/feature.json` if it exists.
-6. Verify the cleanup result.
-7. Report all actions performed using the exact labels defined in the output format.
+6. Remove generated as-built delivery documentation files: `features/**/delivery-doc.md` if it exists.
+7. Verify the cleanup result.
+8. Report all actions performed using the exact labels defined in the output format.
 
 ## Command execution guidance
 

@@ -1,127 +1,94 @@
 # GRM Custom Spec Kit
 
-Corporate customization of Spec Kit based on Presets and Extensions.
+Corporate customization of Spec Kit based on governance, Product Driven Development and Spec Driven Development.
 
 ## Overview
 
-GRM Custom Spec Kit is a Proof of Concept (POC) that extends and governs the standard Spec Kit workflow without modifying the Spec Kit core.
-
-The objective is to enforce a Product Backlog Item (PBI) driven workflow, where approved business requirements become the single functional source of truth throughout the software delivery lifecycle.
+GRM Custom Spec Kit extends Spec Kit without modifying its core.
 
 Key principles:
-
+- PBI as single functional source of truth
 - Product Driven Development
 - Spec Driven Development
-- PBI as the source of truth
 - Corporate governance
-- Maximum reuse of standard Spec Kit capabilities
-- No fork of Spec Kit
+- Maximum reuse of native Spec Kit capabilities
+- No fork maintenance
 
----
-
-# Objectives
-
-The POC validates that it is possible to:
-
-- Introduce corporate commands without modifying Spec Kit core.
-- Govern the development lifecycle through approved PBIs.
-- Prevent uncontrolled specification creation.
-- Reuse the native planning and implementation workflow.
-- Maintain compatibility with future Spec Kit releases.
-
----
-
-# Corporate Workflow
+## Validated End-to-End Workflow
 
 ```text
-/corp.erase (optional manual execution)
+corp.erase (optional)
         ↓
-/corp.load --file <pbi.md>
+corp.load
         ↓
-(corporate cleanup executed automatically)
+corp.assess
         ↓
-/corp.assess
+corp.plan
         ↓
-/corp.plan
+speckit.plan
         ↓
-/speckit.plan
+speckit.tasks
         ↓
-/speckit.tasks
+speckit.implement
         ↓
-/speckit.implement
+corp.doc
 ```
 
-Governance principle:
+Result:
 
 ```text
-No Plan Without Assessment
+END-TO-END VALIDATED
 ```
 
-## Context Management
-
-To avoid contamination between different PBI executions, the GRM workflow introduces an explicit context management mechanism.
+## Corporate Commands
 
 ### /corp.erase
+- Reset active context
+- Clean features/
+- Remove feature state
 
-Purpose:
+### /corp.load
+- Load approved PBI
+- Automatically execute corporate cleanup
 
-- Reset `.specify/memory/active-pbi.md`
-- Clean `features/`
-- Remove `.specify/feature.json`
+### /corp.assess
+- Readiness assessment
+- Governance gate
 
-This command can be executed manually when required.
+### /corp.plan
+- Generate corporate bootstrap specification
 
-### Automatic cleanup
+### /corp.doc
+Generate authoritative as-built documentation.
 
-`/corp.load` automatically performs the same cleanup procedure before loading a new PBI.
+Outputs:
+- delivery-doc.md
 
-This guarantees:
+Capabilities:
+- PBI vs implementation comparison
+- Deviation detection
+- Validation gap detection
+- Technical debt identification
+- Validation evidence consolidation
+- Improvement backlog generation
 
-- Clean execution context
-- No residual active feature references
-- No previous PBI contamination
-- Repeatable execution results
+## Architecture Layers
 
----
+### Runtime Layer
+- .github
 
-# Repository Structure
+### Customization Layer
+- extensions
+- presets
 
-```text
-.github/
-├── agents/
-└── prompts/
+## Current POC Status
 
-docs/
-├── architecture.md
-├── discovery-log.md
-└── user-guide.md
-
-extensions/
-└── grm-corporate-workflow/
-
-presets/
-└── grm-corporate-governance/
-
-samples/
-```
-
----
-
-# Architecture
-
-The solution is composed of two customization layers.
-
-## Extension
-
-Location:
-
-```text
-extensions/grm-corporate-workflow
-```
-
-Provides new corporate commands:
-
-- /corp.erase
-- /corp.load
-- /corp.assess
-- /corp.plan
+Validated:
+- corp.erase
+- corp.load
+- corp.assess
+- corp.plan
+- speckit.plan
+- speckit.tasks
+- speckit.implement
+- corp.doc

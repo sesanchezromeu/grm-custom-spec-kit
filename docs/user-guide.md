@@ -16,27 +16,16 @@ Objectives:
 
 ## 2. Current POC Status
 
-Current Version:
-
-```text
-v0.1.0-poc
-```
-
-Validated:
+### Validated Commands
 
 - corp.erase
 - corp.load
 - corp.assess
 - corp.plan
 - speckit.plan
-- speckit.tasks (runtime available)
-- speckit.implement (runtime available)
-
-Validation environment:
-
-- Clean Spec Kit installation.
-- GitHub Copilot integration.
-- Real PBIs.
+- speckit.tasks
+- speckit.implement
+- corp.doc
 
 ---
 
@@ -71,6 +60,7 @@ Execute the workflow.
 /speckit.plan
 /speckit.tasks
 /speckit.implement
+/corp.doc
 ```
 
 ---
@@ -78,19 +68,21 @@ Execute the workflow.
 ## 4. Corporate Workflow
 
 ```text
-/corp.erase (optional)
+corp.erase (optional)
         ↓
-/corp.load
+corp.load
         ↓
-(auto-cleanup)
+corp.assess
         ↓
-/corp.assess
+corp.plan
         ↓
-/corp.plan
+speckit.plan
         ↓
-/speckit.tasks
+speckit.tasks
         ↓
-/speckit.implement
+speckit.implement
+        ↓
+corp.doc
 ```
 
 Rule:
@@ -201,6 +193,30 @@ Generates implementation tasks.
 
 Implements generated tasks.
 
+### /corp.doc
+
+Purpose:
+Generate authoritative as-built documentation for the implemented feature.
+
+Output:
+
+```text
+features/<feature>/delivery-doc.md
+```
+
+Capabilities:
+- Compare implementation against PBI
+- Detect deviations
+- Detect validation gaps
+- Detect technical debt
+- Consolidate validation evidence
+- Generate improvement backlog candidates
+
+Status values:
+- COMPLIANT
+- COMPLIANT_WITH_FINDINGS
+- NON_COMPLIANT
+
 ---
 
 ## 7. Blocked Commands
@@ -219,12 +235,13 @@ Prevent uncontrolled functional specifications.
 ## 8. Example
 
 ```text
-/corp.load --file samples/7P_PBI-08_listado-solicitudes.md
+/corp.load --file samples/<your pbi>.md
 /corp.assess
 /corp.plan
 /speckit.plan
 /speckit.tasks
 /speckit.implement
+/corp.doc
 ```
 
 ---
@@ -233,11 +250,13 @@ Prevent uncontrolled functional specifications.
 
 - Keep PBIs small.
 - Use measurable acceptance criteria.
-- Always execute corp.assess.
+- Always execute corp.assess before planning.
 - Resolve critical risks before planning.
 - Preserve traceability.
 - Start each new validation cycle from a clean context.
 - Use corp.erase when troubleshooting or validating command behavior.
+- Run corp.doc after implementation
+- Use delivery-doc.md as authoritative as-built documentation
 
 ---
 
@@ -285,19 +304,13 @@ Verify:
 ## 13. Roadmap
 
 ### v0.2
-
-- Installation improvements.
-- Runtime synchronization.
+- Installation improvements
+- Runtime synchronization
 
 ### v0.3
-
-- Azure DevOps.
-- MCP.
-
-### v0.4
-
-- corp.doc.
+- Azure DevOps integration
+- MCP integration
 
 ### v1.0
+- Enterprise-ready framework
 
-- Enterprise-ready framework.

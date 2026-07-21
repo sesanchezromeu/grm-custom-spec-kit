@@ -20,21 +20,25 @@ Product Owner
       ↓
 PBI Markdown
       ↓
-/corp.erase (optional)
+corp.erase
       ↓
-/corp.load
+corp.load
       ↓
 active-pbi.md
       ↓
-/corp.assess
+corp.assess
       ↓
-/corp.plan
+corp.plan
       ↓
-/speckit.plan
+speckit.plan
       ↓
-/speckit.tasks
+speckit.tasks
       ↓
-/speckit.implement
+speckit.implement
+      ↓
+corp.doc
+      ↓
+delivery-doc.md
 ```
 
 Governance principle:
@@ -178,6 +182,24 @@ Output:
 features/<feature>/spec.md
 ```
 
+### corp.doc
+
+Purpose:
+Generate authoritative as-built documentation.
+
+Output:
+
+```text
+features/<feature>/delivery-doc.md
+```
+
+Characteristics:
+- Documentation only
+- No source code modification
+- Executes available validations when possible
+- Uses implementation as source of truth
+- Compares expected vs implemented behavior
+
 ### Corporate Guard
 
 Implemented in:
@@ -223,17 +245,21 @@ Allows reuse of native Spec Kit planning.
 
 ### D05 - Explicit Context Management
 
-Applied to:
+### D05 - Explicit Context Management
+- corp.erase
+- corp.load
 
-corp.erase
-corp.load
+### D06 - As-Built Documentation
+
+Applied to:
+- corp.doc
 
 Rationale:
-
-- Eliminate cross-execution contamination
-- Improve repeatability
-- Simplify validation scenarios
-- Increase traceability
+- Keep documentation synchronized with implementation
+- Detect implementation drift
+- Capture technical debt
+- Capture validation gaps
+- Support future PBI creation
 
 ---
 
@@ -266,14 +292,26 @@ Validated successfully:
 
 ```text
 corp.erase
-        ↓
+↓
 corp.load
-        ↓
+↓
 corp.assess
-        ↓
+↓
 corp.plan
-        ↓
+↓
 speckit.plan
+↓
+speckit.tasks
+↓
+speckit.implement
+↓
+corp.doc
+```
+
+Result:
+
+```text
+END-TO-END VALIDATED
 ```
 
 Validation performed using multiple PBIs and a clean Spec Kit installation.

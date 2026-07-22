@@ -1,71 +1,255 @@
 # GRM Custom Spec Kit - User Guide
 
-## 1. Introduction
+## 1. Purpose
 
-GRM Custom Spec Kit is a corporate customization of Spec Kit based on Presets and Extensions.
+This guide explains how to use GRM Custom Spec Kit to deliver work from an approved Product Backlog Item (PBI) to implementation and authoritative delivery documentation.
 
-Objectives:
+It is intended for users who execute the delivery workflow on a day-to-day basis.
 
-- Product Driven Development.
-- Spec Driven Development.
-- Corporate governance.
-- PBI as the source of truth.
-- No fork maintenance.
+This document focuses on operational usage only.
 
----
+For installation, architecture, governance rationale or long-term maintenance, refer to:
 
-## 2. Current POC Status
-
-### Validated Commands
-
-- corp.erase
-- corp.load
-- corp.assess
-- corp.plan
-- speckit.plan
-- speckit.tasks
-- speckit.implement
-- corp.doc
+- `docs/installation-guide.md`
+- `docs/architecture.md`
+- `docs/governance.md`
+- `docs/maintenance.md`
 
 ---
 
-## 3. Installation
+## 2. When to Use This Framework
 
-### Step 1
+Use GRM Custom Spec Kit when delivery work must originate from an approved PBI and must remain traceable through planning, implementation and documentation.
 
-Create a clean Spec Kit project.
+### Suitable Use Cases
 
-```powershell
-specify init --here
-```
+Use this framework for:
 
-### Step 2
+- Approved Product Backlog Items.
+- New functional features.
+- Functional changes with clear acceptance criteria.
+- Controlled technical implementation from approved scope.
+- PBI-based validation scenarios.
+- Delivery flows requiring traceable as-built documentation.
 
-Apply the GRM customization.
+### Unsuitable Use Cases
 
-Copy:
+Do not use this framework for:
+
+- Initial product discovery.
+- Unapproved ideas.
+- Exploratory requirement definition.
+- Ad-hoc functional clarification.
+- Direct creation of specifications outside an approved PBI.
+- Work that has not passed the required product governance process.
+
+### Key Rule
 
 ```text
-.github
+No approved PBI, no delivery workflow.
 ```
 
-### Step 3
+---
 
-Execute the workflow.
+## 3. Delivery Lifecycle Overview
+
+GRM Custom Spec Kit enforces a controlled delivery lifecycle.
 
 ```text
-/corp.load
+Approved PBI
+        ↓
+corp.load
+        ↓
+corp.assess
+        ↓
+corp.plan
+        ↓
+speckit.plan
+        ↓
+speckit.tasks
+        ↓
+speckit.implement
+        ↓
+corp.doc
+        ↓
+delivery-doc.md
+```
+
+The approved PBI is the functional source of truth.
+
+The implementation is the source of reality for final delivery documentation.
+
+The final expected output is:
+
+```text
+features/<feature>/delivery-doc.md
+```
+
+This file is the authoritative delivery record for the implemented feature.
+
+---
+
+## 4. Core Operating Principles
+
+## 4.1 PBI First
+
+All delivery work starts from an approved PBI.
+
+Developers must not create functional scope directly through standard Spec Kit specification commands.
+
+## 4.2 No Plan Without Assessment
+
+Planning must not start until the PBI has been assessed.
+
+```text
+corp.assess
+        ↓
+corp.plan
+        ↓
+speckit.plan
+```
+
+## 4.3 Native Spec Kit Reuse
+
+GRM Custom Spec Kit preserves native Spec Kit planning, task generation and implementation commands.
+
+Corporate commands prepare and protect the workflow.
+
+## 4.4 Explicit Context Management
+
+Each PBI execution must use a clean context.
+
+`corp.load` automatically resets the active context before loading a new PBI.
+
+`corp.erase` can also be executed manually when troubleshooting or resetting a workspace.
+
+## 4.5 Delivery Documentation as Closure
+
+The workflow is not complete until `corp.doc` has generated the delivery documentation.
+
+---
+
+## 5. Roles and Responsibilities
+
+| Role | Main Responsibilities |
+|------|------------------------|
+| Product Owner | Owns the PBI, acceptance criteria and functional decisions |
+| Developer | Executes the workflow and implements the solution |
+| Project Manager | Ensures governance, traceability and delivery coordination |
+| Technical Lead | Supports implementation quality and technical decision-making |
+| Maintainer | Owns installation, runtime synchronization and framework evolution |
+
+---
+
+## 6. Quick Start
+
+Use this sequence for a standard approved PBI.
+
+### Step 1 - Load the Approved PBI
+
+```text
+/corp.load --file samples/PBI-POC-01-calculadora-iva.md
+```
+
+Expected result:
+
+```text
+.specify/memory/active-pbi.md
+```
+
+The active PBI context is created and previous execution state is cleaned.
+
+---
+
+### Step 2 - Assess the PBI
+
+```text
 /corp.assess
+```
+
+Expected result:
+
+```text
+READY
+READY_WITH_RISKS
+NOT_READY
+```
+
+Continue only if the result is `READY` or if `READY_WITH_RISKS` has been explicitly accepted.
+
+---
+
+### Step 3 - Generate Corporate Bootstrap Specification
+
+```text
 /corp.plan
+```
+
+Expected result:
+
+```text
+features/<feature>/spec.md
+```
+
+This creates the controlled bootstrap specification required for native Spec Kit planning.
+
+---
+
+### Step 4 - Run Native Spec Kit Planning
+
+```text
 /speckit.plan
+```
+
+Expected result:
+
+Technical planning artifacts are generated using the corporate bootstrap specification.
+
+---
+
+### Step 5 - Generate Implementation Tasks
+
+```text
 /speckit.tasks
+```
+
+Expected result:
+
+Implementation tasks are generated from the planning artifacts.
+
+---
+
+### Step 6 - Implement
+
+```text
 /speckit.implement
+```
+
+Expected result:
+
+The implementation is generated or updated according to the planned tasks.
+
+---
+
+### Step 7 - Generate Delivery Documentation
+
+```text
 /corp.doc
 ```
 
+Expected result:
+
+```text
+features/<feature>/delivery-doc.md
+```
+
+This document consolidates implemented behavior, validation evidence, deviations, technical debt and improvement candidates.
+
 ---
 
-## 4. Corporate Workflow
+## 7. Corporate Workflow
+
+## 7.1 Standard Flow
 
 ```text
 corp.erase (optional)
@@ -85,75 +269,114 @@ speckit.implement
 corp.doc
 ```
 
-Rule:
+## 7.2 Mandatory Steps
+
+The following steps are mandatory for a normal PBI delivery cycle:
 
 ```text
-No Plan Without Assessment
+corp.load
+corp.assess
+corp.plan
+speckit.plan
+speckit.tasks
+speckit.implement
+corp.doc
 ```
 
----
+## 7.3 Optional Step
 
-## 5. Roles
+`corp.erase` is optional because `corp.load` already performs corporate cleanup.
 
-### Product Owner
+Use `corp.erase` manually when:
 
-- Defines the PBI.
-- Owns acceptance criteria.
-- Resolves functional questions.
-
-### Developer
-
-- Executes the workflow.
-- Implements the solution.
-
-### Project Manager
-
-- Governance.
-- Traceability.
-- Delivery coordination.
+- Troubleshooting.
+- Resetting a validation scenario.
+- Cleaning a contaminated context.
+- Preparing a repeatable test.
 
 ---
 
-## 6. Corporate Commands
+## 8. Command Reference
 
-### /corp.erase
+## 8.1 corp.erase
 
-Erases the current execution context.
+### Purpose
 
-Actions:
+Reset the active execution context.
 
-- Reset `.specify/memory/active-pbi.md`
-- Clean `features/`
-- Remove `.specify/feature.json`
+### Use When
 
-Use cases:
+- Starting a clean validation scenario.
+- Troubleshooting context issues.
+- Removing previous feature state.
+- Ensuring no cross-PBI contamination exists.
 
-- Manual workspace reset
-- Testing
-- Troubleshooting
-- Validation scenarios
+### Main Actions
 
-### /corp.load
+- Resets active PBI context.
+- Cleans generated features.
+- Removes feature execution state.
 
-Loads an approved PBI.
+### Expected Outcome
 
-Before loading the PBI, the command automatically:
+The workspace is ready for a clean PBI load.
 
-- Resets active context
-- Cleans features/
-- Removes .specify/feature.json
+---
 
-Output:
+## 8.2 corp.load
+
+### Purpose
+
+Load an approved PBI and initialize a clean execution context.
+
+### Syntax
+
+```text
+/corp.load --file <pbi.md>
+```
+
+### Input
+
+A markdown PBI file.
+
+Example:
+
+```text
+samples/PBI-POC-01-calculadora-iva.md
+```
+
+### Main Actions
+
+- Performs corporate cleanup.
+- Loads the approved PBI.
+- Creates active PBI context.
+
+### Expected Output
 
 ```text
 .specify/memory/active-pbi.md
 ```
 
-### /corp.assess
+### Important Rule
 
-Performs readiness assessment.
+Do not edit `active-pbi.md` manually. If the PBI is incorrect, update the source PBI and reload it.
 
-Possible results:
+---
+
+## 8.3 corp.assess
+
+### Purpose
+
+Evaluate PBI readiness before planning.
+
+### Characteristics
+
+- Read-only command.
+- Does not generate implementation artifacts.
+- Does not modify functional scope.
+- Acts as a governance gate.
+
+### Possible Outcomes
 
 ```text
 READY
@@ -161,81 +384,276 @@ READY_WITH_RISKS
 NOT_READY
 ```
 
-Read-only command.
+### Expected Usage
 
-### /corp.plan
+Run `corp.assess` after `corp.load` and before `corp.plan`.
 
-Creates bootstrap specification.
+```text
+/corp.load --file <pbi.md>
+/corp.assess
+```
 
-Output:
+---
+
+## 8.4 corp.plan
+
+### Purpose
+
+Generate the controlled bootstrap specification required by native Spec Kit planning.
+
+### Expected Output
 
 ```text
 features/<feature>/spec.md
 ```
 
-Contains:
+### What corp.plan Does
+
+- Reads the approved active PBI.
+- Preserves PBI traceability.
+- Creates a compliant bootstrap specification.
+- Prepares the context for `speckit.plan`.
+
+### What corp.plan Does Not Do
+
+- It does not replace `speckit.plan`.
+- It does not invent requirements.
+- It does not expand functional scope.
+- It does not bypass assessment.
+
+---
+
+## 8.5 speckit.plan
+
+### Purpose
+
+Generate native Spec Kit planning artifacts.
+
+### Governance Constraint
+
+`speckit.plan` is allowed only after `corp.plan` has created the required corporate bootstrap.
+
+If executed too early, it must be blocked by the corporate guard.
+
+---
+
+## 8.6 speckit.tasks
+
+### Purpose
+
+Generate implementation tasks from the planning artifacts.
+
+### Expected Usage
+
+Run after successful planning.
 
 ```text
-Generated by: /corp.plan
-Source of truth:
-.specify/memory/active-pbi.md
+/speckit.plan
+/speckit.tasks
 ```
 
-### /speckit.plan
+---
 
-Generates technical planning artifacts.
+## 8.7 speckit.implement
 
-### /speckit.tasks
+### Purpose
 
-Generates implementation tasks.
+Execute implementation based on generated tasks.
 
-### /speckit.implement
+### Expected Usage
 
-Implements generated tasks.
+Run after task generation.
 
-### /corp.doc
+```text
+/speckit.tasks
+/speckit.implement
+```
 
-Purpose:
-Generate authoritative as-built documentation for the implemented feature.
+---
 
-Output:
+## 8.8 corp.doc
+
+### Purpose
+
+Generate authoritative as-built delivery documentation.
+
+### Expected Output
 
 ```text
 features/<feature>/delivery-doc.md
 ```
 
-Capabilities:
-- Compare implementation against PBI
-- Detect deviations
-- Detect validation gaps
-- Detect technical debt
-- Consolidate validation evidence
-- Generate improvement backlog candidates
+### What corp.doc Does
 
-Status values:
-- COMPLIANT
-- COMPLIANT_WITH_FINDINGS
-- NON_COMPLIANT
+- Reviews the implemented result.
+- Compares intended behavior against implemented behavior.
+- Consolidates validation evidence where available.
+- Detects deviations.
+- Identifies validation gaps.
+- Identifies technical debt.
+- Generates improvement backlog candidates.
+
+### What corp.doc Does Not Do
+
+- It does not change source code.
+- It does not modify the approved PBI.
+- It does not replace formal product acceptance.
 
 ---
 
-## 7. Blocked Commands
+## 9. Understanding Assessment Results
+
+## 9.1 READY
+
+Meaning:
+
+The PBI has enough information to proceed.
+
+Recommended action:
 
 ```text
-/speckit.specify
-/speckit.clarify
+Continue with corp.plan
 ```
 
-Reason:
+## 9.2 READY_WITH_RISKS
 
-Prevent uncontrolled functional specifications.
+Meaning:
+
+The PBI can proceed, but known risks or gaps exist.
+
+Recommended action:
+
+1. Review the identified risks.
+2. Confirm whether they are acceptable.
+3. Document mitigation or assumptions.
+4. Continue only if the delivery owner accepts the risk.
+
+Typical examples:
+
+- Minor ambiguity.
+- Non-blocking dependency.
+- Validation criteria present but incomplete.
+- Technical uncertainty that can be resolved during implementation.
+
+## 9.3 NOT_READY
+
+Meaning:
+
+The PBI is not ready for planning.
+
+Recommended action:
+
+```text
+Stop the workflow
+```
+
+Then:
+
+1. Return the PBI to refinement.
+2. Resolve missing information.
+3. Clarify acceptance criteria.
+4. Reload the updated PBI.
+5. Run `corp.assess` again.
+
+Do not execute `corp.plan` when the result is `NOT_READY`.
 
 ---
 
-## 8. Example
+## 10. Understanding Delivery Documentation
+
+## 10.1 Purpose of delivery-doc.md
+
+`delivery-doc.md` is the authoritative delivery record for the implemented feature.
+
+It captures what was actually delivered, not only what was originally planned.
+
+## 10.2 Expected Content
+
+A complete delivery document should include:
+
+- PBI reference.
+- Implemented behavior.
+- Validation evidence.
+- Deviations from expected behavior.
+- Validation gaps.
+- Technical debt.
+- Improvement backlog candidates.
+- Final compliance status.
+
+## 10.3 Possible Status Values
 
 ```text
-/corp.load --file samples/<your pbi>.md
+COMPLIANT
+COMPLIANT_WITH_FINDINGS
+NON_COMPLIANT
+```
+
+## 10.4 How to Use delivery-doc.md
+
+Use the delivery document to:
+
+- Support delivery review.
+- Inform Product Owner acceptance.
+- Capture technical findings.
+- Create follow-up PBIs.
+- Improve future planning.
+- Preserve end-to-end traceability.
+
+## 10.5 Important Rule
+
+The workflow is not complete until `delivery-doc.md` exists and has been reviewed.
+
+---
+
+## 11. Governance Rules for Users
+
+## 11.1 Blocked Commands
+
+The following standard Spec Kit commands are blocked by corporate governance:
+
+```text
+speckit.specify
+speckit.clarify
+```
+
+### Why speckit.specify Is Blocked
+
+Functional specifications must originate from an approved PBI.
+
+Users must not create new functional scope directly from the delivery environment.
+
+### Why speckit.clarify Is Blocked
+
+Functional clarification belongs to product refinement before PBI approval.
+
+Clarifying scope during delivery may bypass product governance.
+
+## 11.2 Protected Command
+
+```text
+speckit.plan
+```
+
+`speckit.plan` remains available because GRM reuses native Spec Kit planning.
+
+It is protected because planning must only run after:
+
+```text
+corp.load
+corp.assess
+corp.plan
+```
+
+---
+
+## 12. Common Scenarios
+
+## 12.1 Scenario 1 - New Approved PBI
+
+Use when starting a new feature from an approved PBI.
+
+```text
+/corp.load --file <pbi.md>
 /corp.assess
 /corp.plan
 /speckit.plan
@@ -244,73 +662,464 @@ Prevent uncontrolled functional specifications.
 /corp.doc
 ```
 
+Expected outcome:
+
+```text
+delivery-doc.md generated
+```
+
 ---
 
-## 9. Best Practices
+## 12.2 Scenario 2 - PBI Assessment Returns READY_WITH_RISKS
 
-- Keep PBIs small.
+Use when the PBI can proceed but contains manageable risks.
+
+Recommended flow:
+
+```text
+/corp.load --file <pbi.md>
+/corp.assess
+```
+
+If result is `READY_WITH_RISKS`:
+
+1. Review risks.
+2. Confirm acceptance with the delivery owner.
+3. Continue with:
+
+```text
+/corp.plan
+/speckit.plan
+```
+
+Do not ignore the risks. They should remain visible in planning or delivery documentation.
+
+---
+
+## 12.3 Scenario 3 - PBI Assessment Returns NOT_READY
+
+Use when the PBI is incomplete or not suitable for planning.
+
+Recommended flow:
+
+```text
+/corp.load --file <pbi.md>
+/corp.assess
+```
+
+If result is `NOT_READY`:
+
+```text
+Stop
+```
+
+Then:
+
+- Return the PBI to refinement.
+- Update the source PBI.
+- Reload it.
+- Re-run assessment.
+
+Do not continue to planning.
+
+---
+
+## 12.4 Scenario 4 - Clean Retest of the Same PBI
+
+Use when repeating validation from a clean state.
+
+```text
+/corp.erase
+/corp.load --file <pbi.md>
+/corp.assess
+/corp.plan
+```
+
+Optional continuation:
+
+```text
+/speckit.plan
+/speckit.tasks
+/speckit.implement
+/corp.doc
+```
+
+---
+
+## 12.5 Scenario 5 - Suspected Context Contamination
+
+Use when artifacts from a previous PBI appear to affect the current workflow.
+
+Recommended action:
+
+```text
+/corp.erase
+/corp.load --file <pbi.md>
+```
+
+Then continue with:
+
+```text
+/corp.assess
+```
+
+---
+
+## 12.6 Scenario 6 - Re-run Delivery Documentation
+
+Use when implementation has changed or validation evidence has been added.
+
+```text
+/corp.doc
+```
+
+Expected outcome:
+
+`delivery-doc.md` reflects the latest implementation state.
+
+---
+
+## 13. Best Practices
+
+- Use approved PBIs only.
+- Keep PBIs small and focused.
 - Use measurable acceptance criteria.
-- Always execute corp.assess before planning.
-- Resolve critical risks before planning.
-- Preserve traceability.
-- Start each new validation cycle from a clean context.
-- Use corp.erase when troubleshooting or validating command behavior.
-- Run corp.doc after implementation
-- Use delivery-doc.md as authoritative as-built documentation
+- Run `corp.assess` before planning.
+- Stop when assessment returns `NOT_READY`.
+- Treat `READY_WITH_RISKS` as a managed exception, not as a normal success.
+- Do not manually edit generated runtime context files.
+- Use `corp.erase` when troubleshooting.
+- Generate `corp.doc` after implementation.
+- Review `delivery-doc.md` before closing the work.
+- Preserve traceability between PBI, plan, tasks, implementation and documentation.
 
 ---
 
-## 10. Anti-Patterns
+## 14. Anti-Patterns
 
-- Skip corp.assess.
-- Edit active-pbi.md manually.
-- Use speckit.specify.
-- Use speckit.clarify.
-- Change acceptance criteria during planning.
+Avoid the following behaviors:
+
+- Starting work without an approved PBI.
+- Skipping `corp.assess`.
+- Running `speckit.plan` before `corp.plan`.
+- Using `speckit.specify`.
+- Using `speckit.clarify`.
+- Editing `active-pbi.md` manually.
+- Expanding scope during planning.
+- Treating `READY_WITH_RISKS` as risk-free.
+- Closing a PBI without generating `delivery-doc.md`.
+- Reusing a contaminated workspace across PBIs.
 
 ---
 
-## 11. Troubleshooting
+## 15. Troubleshooting
 
-### speckit.plan blocked
+## 15.1 corp.load Fails
+
+Possible causes:
+
+- Invalid file path.
+- PBI file does not exist.
+- File is not accessible.
+- Repository is not opened at the expected root.
+- Write permissions are missing.
+
+Recommended actions:
+
+1. Verify the file path.
+2. Confirm the file exists.
+3. Use a path relative to the repository root.
+4. Verify write permissions.
+5. Re-run `corp.load`.
+
+---
+
+## 15.2 active-pbi.md Missing
+
+Possible causes:
+
+- `corp.load` failed.
+- Context was erased after loading.
+- Runtime path is incorrect.
+
+Recommended actions:
+
+```text
+/corp.erase
+/corp.load --file <pbi.md>
+```
+
+Then verify:
+
+```text
+.specify/memory/active-pbi.md
+```
+
+---
+
+## 15.3 corp.assess Returns NOT_READY
+
+This is not a technical failure.
+
+It means the PBI is not ready for planning.
+
+Recommended actions:
+
+1. Review findings.
+2. Return the PBI to refinement.
+3. Update missing information.
+4. Reload the PBI.
+5. Re-run `corp.assess`.
+
+Do not continue with `corp.plan` until the PBI is ready.
+
+---
+
+## 15.4 corp.plan Does Not Generate spec.md
+
+Possible causes:
+
+- `corp.load` was not executed.
+- `active-pbi.md` is missing.
+- Assessment result was not acceptable.
+- Runtime command failed.
+
+Recommended actions:
+
+1. Verify `active-pbi.md` exists.
+2. Re-run `corp.assess`.
+3. Confirm the PBI is `READY` or accepted as `READY_WITH_RISKS`.
+4. Re-run `corp.plan`.
+
+Expected output:
+
+```text
+features/<feature>/spec.md
+```
+
+---
+
+## 15.5 speckit.plan Is Blocked
+
+This is expected if corporate bootstrap has not been completed.
 
 Verify:
 
-- active-pbi.md exists.
-- spec.md generated by corp.plan exists.
-- Corporate markers exist.
+- `corp.load` executed successfully.
+- `corp.assess` completed.
+- `corp.plan` generated `spec.md`.
+- Corporate bootstrap markers exist.
 
-### corp.load fails
+Recommended sequence:
+
+```text
+/corp.load --file <pbi.md>
+/corp.assess
+/corp.plan
+/speckit.plan
+```
+
+---
+
+## 15.6 speckit.specify or speckit.clarify Is Blocked
+
+This is expected behavior.
+
+These commands are intentionally disabled by corporate governance.
+
+Use the corporate workflow instead:
+
+```text
+/corp.load
+/corp.assess
+/corp.plan
+```
+
+---
+
+## 15.7 speckit.tasks Fails
+
+Possible causes:
+
+- Planning did not complete.
+- Required planning artifacts are missing.
+- `speckit.plan` was blocked or interrupted.
+
+Recommended actions:
+
+1. Verify `speckit.plan` completed successfully.
+2. Verify planning artifacts exist.
+3. Re-run `speckit.plan` if needed.
+4. Re-run `speckit.tasks`.
+
+---
+
+## 15.8 speckit.implement Fails
+
+Possible causes:
+
+- Task generation incomplete.
+- Implementation dependencies missing.
+- Repository state inconsistent.
+
+Recommended actions:
+
+1. Verify tasks were generated.
+2. Review implementation errors.
+3. Resolve missing dependencies or conflicts.
+4. Re-run `speckit.implement`.
+
+---
+
+## 15.9 delivery-doc.md Not Generated
+
+Possible causes:
+
+- Implementation not completed.
+- Feature folder missing.
+- `corp.doc` failed.
+- Validation artifacts unavailable.
+
+Recommended actions:
+
+1. Verify implementation completed.
+2. Verify `features/<feature>/` exists.
+3. Re-run `corp.doc`.
+4. Review generated findings.
+
+---
+
+## 15.10 Context Contamination Suspected
+
+Symptoms:
+
+- Current PBI appears mixed with a previous one.
+- Generated artifacts refer to old requirements.
+- Feature state does not match the active PBI.
+
+Recommended action:
+
+```text
+/corp.erase
+/corp.load --file <pbi.md>
+```
+
+Then continue from assessment.
+
+---
+
+## 16. Known Limitations
+
+Current limitations:
+
+- PBI input is currently markdown-based.
+- Azure DevOps integration is not yet available.
+- MCP integration is not yet available.
+- Runtime synchronization is currently manual.
+- Some additional standard Spec Kit commands may require future governance review.
+- Copilot UI may display internal execution progress messages.
+- File links may appear shortened in the UI although they reference repository paths.
+
+---
+
+## 17. Operational Checklist
+
+## 17.1 Before Starting
 
 Verify:
 
-- File path.
-- File exists.
-- Write permissions.
+- Approved PBI exists.
+- PBI file is available in the repository.
+- Repository is ready for execution.
+- GRM Custom Spec Kit installation has been validated.
+- Required corporate commands are available.
+
+## 17.2 Before Planning
+
+Verify:
+
+- `corp.load` completed successfully.
+- `active-pbi.md` exists.
+- `corp.assess` completed.
+- Assessment result is `READY` or accepted `READY_WITH_RISKS`.
+
+## 17.3 Before Implementation
+
+Verify:
+
+- `corp.plan` completed successfully.
+- `spec.md` exists.
+- `speckit.plan` completed successfully.
+- `speckit.tasks` completed successfully.
+
+## 17.4 Before Closing
+
+Verify:
+
+- `speckit.implement` completed.
+- `corp.doc` executed.
+- `delivery-doc.md` generated.
+- Deviations reviewed.
+- Validation gaps reviewed.
+- Technical debt reviewed.
+- Improvement backlog candidates reviewed.
 
 ---
 
-## 12. Known Limitations
+## 18. Success Criteria
 
-- Local markdown PBIs only.
-- No Azure DevOps integration.
-- No MCP integration.
-- Runtime duplication between .github and presets/extensions.
-- GitHub Copilot may display internal execution progress messages.
-- File links may appear shortened in the UI although they reference the correct repository paths.
+A PBI delivery cycle is considered successfully completed when:
+
+- The approved PBI was loaded.
+- Readiness assessment was executed.
+- Planning bootstrap was generated.
+- Native Spec Kit planning completed.
+- Tasks were generated.
+- Implementation was completed.
+- Delivery documentation was generated.
+- Traceability from PBI to implementation was preserved.
+- Findings, deviations and technical debt were documented.
+
+Expected final artifact:
+
+```text
+features/<feature>/delivery-doc.md
+```
 
 ---
 
-## 13. Roadmap
+## 19. Recommended Closure Review
 
-### v0.2
-- Installation improvements
-- Runtime synchronization
+Before closing the PBI, review:
 
-### v0.3
-- Azure DevOps integration
-- MCP integration
+| Review Area | Question |
+|-------------|----------|
+| Scope | Was the approved PBI implemented? |
+| Acceptance Criteria | Are acceptance criteria covered? |
+| Validation | Is evidence available? |
+| Deviations | Are deviations documented? |
+| Technical Debt | Is debt identified and actionable? |
+| Follow-up | Are improvement candidates captured? |
+| Traceability | Can delivery be traced back to the PBI? |
 
-### v1.0
-- Enterprise-ready framework
+---
 
+## 20. Summary
+
+Use GRM Custom Spec Kit as an operational workflow for controlled PBI-based delivery.
+
+The essential rule is:
+
+```text
+Approved PBI
+        ↓
+Assessment
+        ↓
+Controlled Planning
+        ↓
+Implementation
+        ↓
+As-Built Documentation
+```
+
+The workflow is successful when the implemented feature is traceable, validated and documented through `delivery-doc.md`.

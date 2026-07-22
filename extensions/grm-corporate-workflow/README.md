@@ -1,159 +1,95 @@
 # GRM Corporate Workflow Extension
 
-This extension adds GRM corporate governance commands to a Spec Kit project.
+## Purpose
 
-The objective is to enforce a Product Backlog Item (PBI) driven workflow where approved business requirements become the functional source of truth throughout the delivery lifecycle.
+The GRM Corporate Workflow Extension extends Spec Kit with corporate workflow capabilities designed to support a Product Backlog Item (PBI) driven delivery model.
 
----
+Its purpose is to bridge approved business requirements with native Spec Kit planning and implementation capabilities while preserving governance, traceability and Product Ownership.
 
-# Overview
+The extension adds workflow behavior.
 
-The extension introduces GRM corporate commands without modifying the Spec Kit core.
-
-Key principles:
-
-- Product Driven Development.
-- Spec Driven Development.
-- PBI as the source of truth.
-- Corporate governance.
-- Controlled planning and implementation.
-- End-to-end traceability.
-- No fork of Spec Kit.
+It does not replace Spec Kit core capabilities.
 
 ---
 
-# Corporate Commands
+# Problem Statement
 
-## /corp.erase
+Standard Spec Kit allows specification generation directly from user intent.
 
-### Purpose
+GRM requires a controlled operating model where delivery work must originate from an approved Product Backlog Item.
 
-- Reset the active execution context.
-- Prevent cross-PBI contamination.
-- Ensure repeatable workflow execution.
+```text
+Approved PBI
+        ↓
+Governed Delivery Workflow
+        ↓
+Implementation
+        ↓
+Delivery Documentation
+```
 
-### Actions
-
-- Reset `.specify/memory/active-pbi.md`
-- Clean `features/`
-- Remove `.specify/feature.json`
-
-### Characteristics
-
-- Can be executed manually.
-- Executed automatically by `/corp.load`.
+The extension exists to enforce this workflow while maximizing reuse of native Spec Kit functionality.
 
 ---
 
-## /corp.load
+# Objectives
 
-### Purpose
+The extension was designed to:
 
-- Load an approved PBI.
-- Initialize a clean execution context.
-
-### Input
-
-```text
-/corp.load --file <pbi.md>
-```
-
-### Output
-
-```text
-.specify/memory/active-pbi.md
-```
-
-### Characteristics
-
-- Automatically performs corporate cleanup.
-- Extracts and prepares the active PBI context.
-- Establishes the functional baseline for the feature.
+- Preserve Product Ownership.
+- Ensure PBI-first delivery.
+- Enforce delivery governance.
+- Maintain end-to-end traceability.
+- Reuse native Spec Kit planning.
+- Prevent context contamination.
+- Generate authoritative delivery documentation.
+- Avoid maintaining a Spec Kit fork.
 
 ---
 
-## /corp.assess
+# Extension Responsibilities
 
-### Purpose
+The extension is responsible for:
 
-Evaluate PBI readiness before planning.
+- Context lifecycle management.
+- Approved PBI loading.
+- Readiness assessment.
+- Corporate bootstrap generation.
+- Delivery documentation generation.
 
-### Characteristics
+The extension is not responsible for:
 
-- Read-only command.
-- Does not modify artifacts.
-- Performs governance validation.
+- Native planning execution.
+- Native task generation.
+- Native implementation execution.
 
-### Possible Outcomes
-
-```text
-READY
-READY_WITH_RISKS
-NOT_READY
-```
-
-### Governance Principle
-
-```text
-No Plan Without Assessment
-```
+Those responsibilities remain with Spec Kit.
 
 ---
 
-## /corp.plan
-
-### Purpose
-
-Generate the corporate bootstrap specification required by Spec Kit.
-
-### Output
+# Position Within the Architecture
 
 ```text
-features/<feature>/spec.md
+Approved PBI
+        ↓
+GRM Corporate Workflow Extension
+        ↓
+speckit.plan
+        ↓
+speckit.tasks
+        ↓
+speckit.implement
+        ↓
+Delivery Documentation
 ```
 
-### Characteristics
-
-- Preserves PBI traceability.
-- Does not expand scope.
-- Does not invent requirements.
-- Creates the bridge between the approved PBI and Spec Kit planning.
-
----
-
-## /corp.doc
-
-### Purpose
-
-Generate authoritative as-built documentation for the implemented feature.
-
-### Output
-
-```text
-features/<feature>/delivery-doc.md
-```
-
-### Characteristics
-
-- Documentation-only command.
-- Does not modify implementation artifacts.
-- Uses implementation as the source of truth.
-- Compares expected behavior against implemented behavior.
-- Consolidates validation evidence.
-- Documents deviations, validation gaps and technical debt.
-- Generates improvement backlog candidates.
-
-### Possible Outcomes
-
-```text
-COMPLIANT
-COMPLIANT_WITH_FINDINGS
-NON_COMPLIANT
-```
+The extension acts as the operational bridge between approved business scope and native Spec Kit execution.
 
 ---
 
 # Corporate Workflow
+
+## Approved Workflow
 
 ```text
 corp.erase (optional)
@@ -173,97 +109,293 @@ speckit.implement
 corp.doc
 ```
 
-### Result
+Expected final output:
 
 ```text
-Authoritative As-Built Documentation
+features/<feature>/delivery-doc.md
+```
+
+Governance principle:
+
+```text
+No Plan Without Assessment
 ```
 
 ---
 
-# Governance Model
+# Corporate Commands
 
-## Allowed Commands
+## corp.erase
+
+### Purpose
+
+Reset the active execution context.
+
+### Responsibilities
+
+- Remove active PBI state.
+- Remove feature execution state.
+- Prevent cross-PBI contamination.
+- Support clean retest scenarios.
+
+### Managed Artifacts
 
 ```text
-corp.erase
-corp.load
-corp.assess
-corp.plan
-speckit.plan
-speckit.tasks
-speckit.implement
-corp.doc
+.specify/memory/active-pbi.md
+.specify/feature.json
+features/
 ```
 
-## Blocked Commands
+### Typical Usage
 
 ```text
-speckit.specify
-speckit.clarify
+/corp.erase
 ```
-
-### Rationale
-
-Prevent uncontrolled specification creation outside the approved PBI workflow.
 
 ---
 
-# Validated Capabilities
+## corp.load
 
-The extension has been validated through an end-to-end Proof of Concept covering:
+### Purpose
+
+Load an approved PBI and initialize a clean execution context.
+
+### Input
 
 ```text
-PBI
-↓
-corp.load
-↓
-corp.assess
-↓
-corp.plan
-↓
-speckit.plan
-↓
-speckit.tasks
-↓
-speckit.implement
-↓
-corp.doc
+/corp.load --file <pbi.md>
 ```
 
-### Validated Outcomes
+### Output
 
-- Corporate governance enforcement.
-- Context isolation between PBIs.
-- Specification bootstrap generation.
-- Spec Kit planning integration.
-- Task generation.
-- Real implementation generation.
-- Validation evidence execution.
-- As-built documentation generation.
-- Technical debt identification.
-- Validation gap identification.
-- Improvement backlog generation.
+```text
+.specify/memory/active-pbi.md
+```
+
+### Responsibilities
+
+- Execute corporate cleanup.
+- Load the approved PBI.
+- Create active execution context.
+- Establish functional baseline.
+
+### Design Principle
+
+PBI as Functional Source of Truth.
+
+---
+
+## corp.assess
+
+### Purpose
+
+Evaluate PBI readiness before planning.
+
+### Characteristics
+
+- Read-only.
+- Governance gate.
+- No implementation artifacts generated.
+- No modification of approved scope.
+
+### Possible Outcomes
+
+```text
+READY
+READY_WITH_RISKS
+NOT_READY
+```
+
+### Governance Principle
+
+```text
+No Plan Without Assessment
+```
+
+### Expected Usage
+
+```text
+/corp.load
+/corp.assess
+```
+
+before:
+
+```text
+/corp.plan
+```
+
+---
+
+## corp.plan
+
+### Purpose
+
+Generate the corporate bootstrap specification required by native Spec Kit planning.
+
+### Output
+
+```text
+features/<feature>/spec.md
+```
+
+### Responsibilities
+
+- Preserve traceability.
+- Respect approved scope.
+- Create planning input.
+- Create governance bootstrap.
+
+### Important Clarification
+
+`corp.plan` does not replace `speckit.plan`.
+
+Instead:
+
+```text
+Approved PBI
+        ↓
+corp.plan
+        ↓
+Bootstrap Specification
+        ↓
+speckit.plan
+```
+
+This pattern allows reuse of native planning while maintaining governance.
+
+---
+
+## corp.doc
+
+### Purpose
+
+Generate authoritative as-built delivery documentation.
+
+### Output
+
+```text
+features/<feature>/delivery-doc.md
+```
+
+### Responsibilities
+
+- Compare intended versus implemented behavior.
+- Consolidate validation evidence.
+- Detect deviations.
+- Detect validation gaps.
+- Identify technical debt.
+- Generate improvement backlog candidates.
+
+### Possible Outcomes
+
+```text
+COMPLIANT
+COMPLIANT_WITH_FINDINGS
+NON_COMPLIANT
+```
+
+### Governance Value
+
+The delivery document acts as the authoritative delivery record for the feature.
+
+---
+
+# Relationship with Native Spec Kit
+
+The extension intentionally preserves native Spec Kit capabilities.
+
+## Reused Commands
+
+```text
+speckit.plan
+speckit.tasks
+speckit.implement
+```
+
+## Strategy
+
+```text
+GRM governs planning
+GRM does not replace planning
+```
+
+Benefits:
+
+- Lower maintenance cost.
+- Better compatibility.
+- Easier upgrades.
+- Increased reuse of upstream capabilities.
+
+---
+
+# Governance Relationship
+
+The extension implements workflow behavior.
+
+Governance restrictions are defined separately through:
+
+```text
+presets/grm-corporate-governance
+```
+
+Examples:
+
+- speckit.specify blocked.
+- speckit.clarify blocked.
+- speckit.plan protected by bootstrap validation.
+
+This separation keeps workflow implementation and governance policy independent.
 
 ---
 
 # Design Principles
 
-## PBI as Source of Truth
+## PBI First
 
-The approved PBI remains the functional baseline throughout the workflow.
+Approved PBIs define functional scope.
 
-## Implementation as Source of Reality
+## Product Ownership
 
-Generated documentation reflects what was actually implemented, not only what was planned.
+Functional ownership remains with the Product Owner.
+
+## Controlled Planning
+
+Planning requires readiness assessment and bootstrap generation.
 
 ## Explicit Context Management
 
-Each execution starts from a clean context to avoid contamination from previous PBIs.
+Every workflow starts from a known execution state.
+
+## End-to-End Traceability
+
+All delivery artifacts can be traced back to the approved PBI.
 
 ## As-Built Documentation
 
-The final delivery documentation remains synchronized with implementation and provides a reliable basis for future PBIs.
+Documentation reflects implemented reality, not only planned intent.
+
+---
+
+# Traceability Model
+
+```text
+Approved PBI
+        ↓
+active-pbi.md
+        ↓
+spec.md
+        ↓
+Planning
+        ↓
+Tasks
+        ↓
+Implementation
+        ↓
+delivery-doc.md
+```
+
+The extension is responsible for preserving this traceability chain.
 
 ---
 
@@ -284,12 +416,79 @@ grm-corporate-workflow/
 
 ---
 
-# Current Status
+# Validation Status
 
-## Status
+Validated workflow:
 
 ```text
-VALIDATED
+corp.erase
+↓
+corp.load
+↓
+corp.assess
+↓
+corp.plan
+↓
+speckit.plan
+↓
+speckit.tasks
+↓
+speckit.implement
+↓
+corp.doc
 ```
 
-The GRM Corporate Workflow Extension has successfully validated the complete corporate workflow from approved PBI to implementation and authoritative as-built documentation.
+Validated outcomes:
+
+- Governance enforcement.
+- Context isolation.
+- PBI-driven execution.
+- Bootstrap generation.
+- Native planning reuse.
+- Task generation.
+- Implementation execution.
+- Delivery documentation generation.
+- Technical debt identification.
+- Validation gap identification.
+- Improvement backlog generation.
+
+---
+
+# Maintainer Notes
+
+When modifying this extension:
+
+1. Update Source of Truth first.
+2. Synchronize runtime.
+3. Revalidate governance.
+4. Execute end-to-end validation.
+5. Update documentation.
+
+Refer to:
+
+```text
+docs/maintenance.md
+```
+
+for the complete maintenance process.
+
+---
+
+# Related Documentation
+
+```text
+README.md
+Installation Guide
+User Guide
+Architecture Guide
+Governance Guide
+Maintenance Guide
+```
+
+Recommended reading order:
+
+1. README
+2. Governance Guide
+3. Architecture Guide
+4. User Guide
+5. Maintenance Guide

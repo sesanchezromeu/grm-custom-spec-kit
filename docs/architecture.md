@@ -1,24 +1,144 @@
 # GRM Custom Spec Kit - Architecture Guide
 
+Version: 1.0
+Last Updated: 2026-07-22
+Status: Release Candidate
+
 ## 1. Overview
 
-GRM Custom Spec Kit is a corporate customization of Spec Kit that introduces governance, Product Driven Development and controlled adoption of Spec Driven Development without maintaining a fork of the upstream product.
+GRM Custom Spec Kit is a corporate customization of Spec Kit that introduces governance, Product Driven Development (PDD) and controlled adoption of Spec Driven Development (SDD) without maintaining a fork of the upstream product.
 
-Design principles:
+The architecture has been intentionally designed to:
 
-- Customize around Spec Kit.
-- Never modify Spec Kit core.
-- PBI as the functional source of truth.
-- Maximum reuse of native Spec Kit capabilities.
+- Preserve native Spec Kit capabilities.
+- Enforce GRM governance.
+- Keep Product Owners accountable for functional scope.
+- Maintain complete traceability from approved PBI to implementation.
+- Minimize future maintenance and upgrade effort.
 
 ---
 
-## 2. Reference Architecture
+# 2. Architectural Principles
+
+## AP01 - PBI First
+
+All delivery work must originate from an approved Product Backlog Item (PBI).
+
+The PBI is the functional source of truth throughout the delivery lifecycle.
+
+```text
+Approved PBI
+        ↓
+Planning
+        ↓
+Implementation
+        ↓
+Delivery Documentation
+```
+
+---
+
+## AP02 - No Fork Strategy
+
+GRM Custom Spec Kit extends Spec Kit without modifying the Spec Kit core.
+
+Benefits:
+
+- Simplified upgrades.
+- Reduced maintenance cost.
+- Better compatibility with future Spec Kit releases.
+- Maximum reuse of native capabilities.
+
+---
+
+## AP03 - Source of Truth vs Runtime
+
+A fundamental architectural principle is the separation between customization definition and execution runtime.
+
+### Source of Truth
+
+```text
+extensions/
+presets/
+```
+
+These directories contain the authoritative definition of the GRM customization.
+
+Responsibilities:
+
+- Corporate workflow definition
+- Governance rules
+- Corporate commands
+- Agents
+- Prompts
+- Guardrails
+
+### Runtime
+
+```text
+.github/
+.specify/
+```
+
+These directories contain executable runtime artifacts.
+
+Responsibilities:
+
+- Copilot execution runtime
+- Spec Kit runtime assets
+- Generated planning artifacts
+- Execution state
+- Temporary workflow artifacts
+
+### Architectural Flow
+
+```text
+Source of Truth
+        ↓
+Runtime Generation
+        ↓
+Execution
+```
+
+The customization layer defines behavior.
+
+The runtime layer executes behavior.
+
+---
+
+## AP04 - Bootstrap Pattern
+
+GRM intentionally preserves native Spec Kit planning.
+
+`corp.plan` does not replace `speckit.plan`.
+
+Instead, it creates a compliant bootstrap specification that allows native planning to execute within governance boundaries.
+
+```text
+Approved PBI
+        ↓
+corp.plan
+        ↓
+Bootstrap Specification
+        ↓
+speckit.plan
+```
+
+Benefits:
+
+- Reuse of proven Spec Kit planning.
+- Preservation of corporate traceability.
+- Reduced customization complexity.
+- Lower maintenance burden.
+
+---
+
+# 3. Reference Architecture
 
 ```text
 Product Owner
       ↓
-PBI Markdown
+Approved PBI
       ↓
 corp.erase
       ↓
@@ -49,223 +169,9 @@ No Plan Without Assessment
 
 ---
 
-## 3. Repository Structure
+# 4. Governance Architecture
 
-```text
-.github/        ← Validated Copilot runtime
-.specify/       ← Spec Kit runtime
-.vscode/
-
-docs/
-extensions/
-presets/
-samples/
-```
-
-### .github
-
-Contains the validated GitHub Copilot runtime used during execution.
-
-### .specify
-
-Contains Spec Kit runtime artifacts:
-
-- integrations
-- scripts
-- templates
-- workflows
-- constitution
-
-### docs
-
-Knowledge base and project documentation.
-
-### extensions
-
-Formal definition of GRM custom commands.
-
-### presets
-
-Formal definition of governance overrides.
-
----
-
-## 4. Runtime Strategy
-
-Current POC intentionally maintains two layers.
-
-### Runtime Layer
-
-```text
-.github/
-```
-
-Contains the validated runtime currently executed by GitHub Copilot.
-
-### Customization Layer
-
-```text
-extensions/
-presets/
-```
-
-Contains the formal source structure of the GRM customization.
-
-### Future Evolution
-
-A future installation or synchronization mechanism should make:
-
-```text
-extensions + presets
-        ↓
-      .github
-```
-
-eliminating manual duplication.
-
----
-
-## 5. Corporate Commands
-
-### /corp.erase
-
-Purpose:
-
-- Clean execution context
-- Prevent cross-PBI contamination
-- Ensure reproducible workflow execution
-
-Managed artifacts:
-
-- `.specify/memory/active-pbi.md`
-- `features/`
-- `.specify/feature.json`
-
-### /corp.load
-
-Purpose:
-
-- Ensure clean execution context
-- Load approved PBI
-- Generate active context
-
-Output:
-
-.specify/memory/active-pbi.md
-
-Additional behavior:
-
-- Automatically performs the equivalent cleanup of `/corp.erase`
-- Verifies active context before reporting success
-
-### /corp.assess
-
-Purpose:
-
-- Readiness assessment.
-- Governance gate.
-
-Characteristics:
-
-- Read-only.
-- No artifact generation.
-
-### /corp.plan
-
-Purpose:
-
-- Generate corporate bootstrap.
-
-Output:
-
-```text
-features/<feature>/spec.md
-```
-
-### corp.doc
-
-Purpose:
-Generate authoritative as-built documentation.
-
-Output:
-
-```text
-features/<feature>/delivery-doc.md
-```
-
-Characteristics:
-- Documentation only
-- No source code modification
-- Executes available validations when possible
-- Uses implementation as source of truth
-- Compares expected vs implemented behavior
-
-### Corporate Guard
-
-Implemented in:
-
-```text
-speckit.plan.agent.md
-```
-
-Blocks planning if the mandatory corporate workflow has not been followed.
-
----
-
-## 6. Design Decisions
-
-### D01 - No Fork
-
-- Easier upgrades.
-- Lower maintenance.
-- Better compatibility.
-
-### D02 - PBI as Source of Truth
-
-- Product ownership alignment.
-- Full traceability.
-
-### D03 - Read-Only Assessment
-
-Applied to:
-
-```text
-corp.assess
-```
-
-### D04 - Bootstrap Pattern
-
-Applied to:
-
-```text
-corp.plan
-```
-
-Allows reuse of native Spec Kit planning.
-
-### D05 - Explicit Context Management
-
-### D05 - Explicit Context Management
-- corp.erase
-- corp.load
-
-### D06 - As-Built Documentation
-
-Applied to:
-- corp.doc
-
-Rationale:
-- Keep documentation synchronized with implementation
-- Detect implementation drift
-- Capture technical debt
-- Capture validation gaps
-- Support future PBI creation
-
----
-
-## 7. Governance Model
-
-### Allowed
+## Allowed Commands
 
 ```text
 corp.erase
@@ -275,20 +181,217 @@ corp.plan
 speckit.plan
 speckit.tasks
 speckit.implement
+corp.doc
 ```
 
-### Blocked
+## Blocked Commands
 
 ```text
 speckit.specify
 speckit.clarify
 ```
 
+### Why speckit.specify Is Blocked
+
+The standard command allows creation of functional specifications outside the approved PBI lifecycle.
+
+This conflicts with the GRM operating model where Product Owners own functional scope.
+
+### Why speckit.clarify Is Blocked
+
+Functional clarification must occur before PBI approval.
+
+Allowing uncontrolled clarification during delivery may introduce scope changes that bypass governance controls.
+
+### Why speckit.plan Remains Available
+
+Planning is a native Spec Kit capability that GRM intentionally preserves.
+
+The command remains available but is protected by a corporate bootstrap guard.
+
 ---
 
-## 8. Validated Scenarios
+# 5. Corporate Guard Design
 
-Validated successfully:
+## Objective
+
+Prevent execution of native planning before the mandatory corporate workflow has been completed.
+
+## Conceptual Flow
+
+```text
+corp.plan
+        ↓
+Bootstrap Validation
+        ↓
+Corporate Guard
+        ↓
+speckit.plan
+```
+
+## Validation Responsibilities
+
+The guard verifies that the required corporate preparation has been completed before planning proceeds.
+
+Typical verification points include:
+
+- Active PBI context exists.
+- Bootstrap specification exists.
+- Corporate workflow markers exist.
+- Mandatory governance sequence has been respected.
+
+## Architectural Benefit
+
+The guard enables safe reuse of native Spec Kit planning while protecting governance integrity.
+
+---
+
+# 6. Repository Architecture
+
+```text
+.github/        Runtime
+.specify/       Runtime
+.vscode/        Local tooling
+
+docs/           Documentation
+extensions/     Source of Truth
+presets/        Source of Truth
+samples/        Demonstration artifacts
+```
+
+## Runtime Layer
+
+### .github
+
+Contains the GitHub Copilot runtime used during execution.
+
+### .specify
+
+Contains Spec Kit runtime assets and generated execution state.
+
+---
+
+## Source of Truth Layer
+
+### extensions
+
+Contains formal definitions of corporate workflow commands.
+
+### presets
+
+Contains governance overrides and behavioral guardrails.
+
+---
+
+## Documentation Layer
+
+### docs
+
+Contains user-facing and maintainer-facing documentation.
+
+---
+
+# 7. Runtime Strategy
+
+The current implementation intentionally maintains separation between customization definitions and executable runtime.
+
+```text
+extensions + presets
+          ↓
+      Runtime
+```
+
+## Why Duplication Exists Today
+
+The current release prioritizes validation, transparency and troubleshooting.
+
+Keeping runtime artifacts visible allows:
+
+- Easier validation.
+- Simpler troubleshooting.
+- Explicit comparison between source and runtime.
+- Reduced implementation risk during framework evolution.
+
+## Future Direction
+
+A future synchronization mechanism may automate runtime generation.
+
+```text
+extensions/
+presets/
+        ↓
+Runtime Generation
+        ↓
+.github/
+```
+
+This would eliminate manual synchronization activities while preserving the same architecture.
+
+---
+
+# 8. Design Decisions
+
+## D01 - No Fork Strategy
+
+Preserve compatibility with upstream Spec Kit.
+
+## D02 - PBI as Source of Truth
+
+Ensure product ownership and functional traceability.
+
+## D03 - Read-Only Assessment
+
+Applied to:
+
+```text
+corp.assess
+```
+
+Assessment must not modify delivery artifacts.
+
+## D04 - Bootstrap Pattern
+
+Applied to:
+
+```text
+corp.plan
+```
+
+Creates a controlled bridge between approved business requirements and native planning.
+
+## D05 - Explicit Context Management
+
+Applied to:
+
+```text
+corp.erase
+corp.load
+```
+
+Prevents cross-PBI contamination.
+
+## D06 - As-Built Documentation
+
+Applied to:
+
+```text
+corp.doc
+```
+
+Uses implementation as the source of reality.
+
+Objectives:
+
+- Detect implementation drift.
+- Capture technical debt.
+- Capture validation gaps.
+- Improve future PBIs.
+
+---
+
+# 9. Validation Status
+
+Validated workflow:
 
 ```text
 corp.erase
@@ -308,59 +411,49 @@ speckit.implement
 corp.doc
 ```
 
-Result:
+Validated outcomes:
 
-```text
-END-TO-END VALIDATED
-```
-
-Validation performed using multiple PBIs and a clean Spec Kit installation.
-
----
-
-## 9. Key Findings
-
-- Custom commands are viable.
-- Governance can be enforced through Copilot agents.
-- No fork is required.
-- PBI-driven workflows are feasible.
-- Native planning can be reused.
-- The solution is portable and reproducible.
-- Context contamination can be eliminated through automated cleanup.
-- Runtime context management improves repeatability of PBI-driven workflows.
+- Governance enforcement.
+- Context isolation.
+- Controlled planning bootstrap.
+- Native planning reuse.
+- Implementation execution.
+- Validation evidence consolidation.
+- As-built documentation generation.
 
 ---
 
-## 10. Technical Debt
+# 10. Technical Debt
 
 Current limitations:
 
 - Markdown PBI source only.
 - No Azure DevOps integration.
 - No MCP integration.
-- Runtime/customization duplication.
+- Runtime synchronization not yet automated.
 - Additional Spec Kit commands not yet governed.
 
 ---
 
-## 11. Roadmap
+# 11. Roadmap
 
-### v0.2
+## v0.2
 
 - Installation model refinement.
 - Runtime synchronization.
 
-### v0.3
+## v0.3
 
 - Azure DevOps integration.
 - MCP integration.
 
-### v0.4
+## v0.4
 
-- corp.doc.
-- Delivery reporting.
+- Governance documentation.
+- Maintenance documentation.
+- Packaging automation.
 
-### v1.0
+## v1.0
 
 - Enterprise-ready framework.
 - Governance dashboards.

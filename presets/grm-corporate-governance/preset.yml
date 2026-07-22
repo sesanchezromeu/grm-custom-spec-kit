@@ -1,10 +1,52 @@
 id: grm-corporate-governance
+
 name: GRM Corporate Governance Preset
-version: 0.1.0
-description: Corporate governance preset that protects the Spec Kit workflow and enforces PBI-driven development.
+
+version: 1.0.0
+
+description: >
+  Corporate governance preset for Spec Kit that enforces the
+  GRM PBI-first operating model. The preset blocks unsupported
+  specification flows, protects planning activities through
+  governance controls and ensures alignment with the approved
+  corporate workflow.
+
 author: GRM
+
 overrides:
   agents:
     - speckit.specify.agent.md
     - speckit.clarify.agent.md
     - speckit.plan.agent.md
+
+metadata:
+  release_status: Release Candidate
+  last_updated: 2026-07-22
+  governance_model: PBI-first
+  planning_model: Corporate Bootstrap Guard
+  documentation_version: 1.0
+
+governance:
+  blocked_commands:
+    - speckit.specify
+    - speckit.clarify
+
+  protected_commands:
+    - speckit.plan
+
+  required_prerequisites:
+    - corp.erase
+    - corp.load
+    - corp.assess
+    - corp.plan
+
+tags:
+  - grm
+  - governance
+  - spec-kit
+  - compliance
+  - planning
+  - pbi
+
+compatibility:
+  spec-kit: current

@@ -1,9 +1,40 @@
 id: grm-corporate-workflow
+
 name: GRM Corporate Workflow
-version: 0.1.0
-description: Corporate Spec Kit workflow extension providing PBI-based entry commands for GRM.
+
+version: 1.0.0
+
+description: >
+  Corporate workflow extension for Spec Kit implementing the
+  GRM PBI-first operating model. Provides controlled entry,
+  assessment, planning and documentation commands that align
+  Product Owners, Architects and Development Teams with the
+  GRM governance framework.
+
 author: GRM
+
 commands:
+  - corp.erase
   - corp.load
   - corp.assess
   - corp.plan
+  - corp.doc
+
+metadata:
+  release_status: Release Candidate
+  last_updated: 2026-07-22
+  architecture_model: Source of Truth / Runtime
+  governance_model: PBI-driven development
+  documentation_version: 1.0
+
+tags:
+  - grm
+  - governance
+  - spec-kit
+  - pbi
+  - workflow
+  - planning
+  - documentation
+
+compatibility:
+  spec-kit: current

@@ -277,6 +277,8 @@ Expected runtime categories:
 
 Exact structure may evolve as Spec Kit and Copilot conventions evolve, but the installed runtime must expose the required corporate commands.
 
+Runtime synchronization should follow the Runtime Merge Strategy defined in Section 13.
+
 ---
 
 ## Step 5 - Preserve Spec Kit Runtime

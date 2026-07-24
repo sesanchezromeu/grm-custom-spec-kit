@@ -204,6 +204,47 @@ A successful completion report is only valid after the file has been written.
 
 If the file cannot be written, report the failure and do not say that the PBI was loaded successfully.
 
+## Full PBI preservation rule
+
+/corp.load must preserve the source PBI content without functional loss.
+
+The generated `.specify/memory/active-pbi.md` must include:
+
+1. A metadata header with:
+   - source type
+   - source path
+   - loaded timestamp
+
+2. The full original PBI content copied verbatim after the metadata header.
+
+The command must not summarize, restructure, rewrite, normalize, omit or compress the source PBI content.
+
+The command must not replace the original PBI structure with a reduced canonical structure.
+
+All original sections must be preserved, including:
+- Descripción
+- Objetivo
+- Alcance funcional
+- Reglas de negocio
+- Criterios de aceptación
+- Restricciones técnicas
+- Fuera de alcance
+- Evidencias esperadas
+- Any explicit finite list of allowed values
+
+If the source PBI contains a list such as:
+
+- 0 %
+- 4 %
+- 10 %
+- 21 %
+
+that list must appear unchanged in `.specify/memory/active-pbi.md`.
+
+Acceptance criteria are not a substitute for the full functional scope.
+
+After writing `.specify/memory/active-pbi.md`, verify that no source section was omitted. If preservation cannot be guaranteed, stop and report an error instead of generating a partial active PBI.
+
 ## Required active PBI format
 
 The generated `.specify/memory/active-pbi.md` file must follow this structure:

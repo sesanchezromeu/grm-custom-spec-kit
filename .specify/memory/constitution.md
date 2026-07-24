@@ -1,50 +1,131 @@
-# [PROJECT_NAME] Constitution
-<!-- Example: Spec Constitution, TaskFlow Constitution, etc. -->
+# GRM Frontend POC Constitution (LITE)
+
+> Variante reducida de la constitución corporativa, acotada a **desarrollo web de solo frontend** (HTML, SCSS, TypeScript/Angular).
+> Uso previsto: validación del workflow SDD/speckit sobre un alcance pequeño. **No sustituye a la constitución corporativa completa** en proyectos con backend.
+> Fuera de alcance por diseño: API REST, persistencia, infraestructura, despliegue.
 
 ## Core Principles
 
-### [PRINCIPLE_1_NAME]
-<!-- Example: I. Library-First -->
-[PRINCIPLE_1_DESCRIPTION]
-<!-- Example: Every feature starts as a standalone library; Libraries must be self-contained, independently testable, documented; Clear purpose required - no organizational-only libraries -->
+### I. Especificación antes que código (NO NEGOCIABLE)
 
-### [PRINCIPLE_2_NAME]
-<!-- Example: II. CLI Interface -->
-[PRINCIPLE_2_DESCRIPTION]
-<!-- Example: Every library exposes functionality via CLI; Text in/out protocol: stdin/args → stdout, errors → stderr; Support JSON + human-readable formats -->
+Se mantiene íntegro respecto a la constitución completa: es el objeto mismo de esta POC.
 
-### [PRINCIPLE_3_NAME]
-<!-- Example: III. Test-First (NON-NEGOTIABLE) -->
-[PRINCIPLE_3_DESCRIPTION]
-<!-- Example: TDD mandatory: Tests written → User approved → Tests fail → Then implement; Red-Green-Refactor cycle strictly enforced -->
+- Secuencia obligatoria: PBIs → plan → implementación → documentación
+- La fuente de verdad es la documentación, no el código.
+- Todo cambio se captura y registra en la documentación final
+- Nada fuera del alcance previsto en el PBI
 
-### [PRINCIPLE_4_NAME]
-<!-- Example: IV. Integration Testing -->
-[PRINCIPLE_4_DESCRIPTION]
-<!-- Example: Focus areas requiring integration tests: New library contract tests, Contract changes, Inter-service communication, Shared schemas -->
+### II. Frontera de datos explícita
 
-### [PRINCIPLE_5_NAME]
-<!-- Example: V. Observability, VI. Versioning & Breaking Changes, VII. Simplicity -->
-[PRINCIPLE_5_DESCRIPTION]
-<!-- Example: Text I/O ensures debuggability; Structured logging required; Or: MAJOR.MINOR.BUILD format; Or: Start simple, YAGNI principles -->
+Aunque no exista backend, la aplicación se construye **como si lo hubiera**.
 
-## [SECTION_2_NAME]
-<!-- Example: Additional Constraints, Security Requirements, Performance Standards, etc. -->
+- Todo dato de dominio se consume a través de un **servicio con contrato tipado** (interfaz TypeScript + modelos). Los componentes nunca conocen el origen del dato.
+- La implementación simulada (datos en memoria, fixtures JSON, `delay()` para latencia) vive detrás de esa interfaz y es sustituible por un cliente HTTP real **sin tocar ningún componente**.
+- Prohibido el dato de dominio embebido en plantillas o en el propio componente.
+- Los modelos se declaran una sola vez y se reutilizan; nada de formas de objeto duplicadas o inferidas ad hoc.
 
-[SECTION_2_CONTENT]
-<!-- Example: Technology stack requirements, compliance standards, deployment policies, etc. -->
+*Racional:* es la única línea que impide que la POC valide un workflow que no sobreviva a la llegada del backend.
 
-## [SECTION_3_NAME]
-<!-- Example: Development Workflow, Review Process, Quality Gates, etc. -->
+### III. Arquitectura de frontend
 
-[SECTION_3_CONTENT]
-<!-- Example: Code review requirements, testing gates, deployment approval process, etc. -->
+- Estructura por **feature modules** con carga diferida; un módulo por área funcional.
+- Separación estricta: el **componente presenta y orquesta**, el **servicio decide y transforma**. Sin lógica de negocio en plantillas.
+- Formularios reactivos. Sin manipulación directa del DOM salvo justificación registrada.
+- Tipado estricto activado. `any` requiere justificación explícita en el PBI.
+- Estado compartido en servicios con flujo observable; sin estado global implícito ni acoplamiento entre componentes hermanos.
+
+### IV. UI corporativa, accesible y responsive
+
+- Design system corporativo heredado: componentes de la librería estándar antes que componentes propios. Un componente propio solo se crea cuando la librería no cubre el caso, y se justifica.
+- Estilos en SCSS con tokens y variables; sin valores de color, espaciado o tipografía cableados en el componente.
+- **Responsive obligatorio** en los tres breakpoints (móvil, tablet, escritorio); la verificación visual es criterio de aceptación, no una comprobación posterior.
+- Todo listado, tabla o panel declara su **estado vacío** y su **estado de carga**. Los listados largos usan scroll contenido, no crecimiento indefinido.
+- Todo error se traduce en un mensaje accionable para el usuario. Nada falla en silencio.
+
+### V. Simplicidad y trazabilidad ligera
+
+- Ante dos soluciones que satisfacen la spec, se adopta la más simple. La anticipación de requisitos no especificados no es justificación válida.
+- Las decisiones con consecuencias estructurales (librería nueva, patrón de estado, ruta de navegación) se registran como ADR breve con identificador canónico, incluso en POC.
+- Los puntos abiertos se declaran con su impacto; no se resuelven unilateralmente.
+
+## Restricciones tecnológicas
+
+| Componente | Valor |
+|---|---|
+| Framework | Angular (versión alineada al template corporativo vigente) |
+| Lenguaje | TypeScript, modo estricto |
+| Estilos | SCSS |
+| UI | Angular Material + CDK · Bootstrap |
+| Formularios | Reactive Forms |
+| Listados | Componentes de tabla, paginador y ordenación de la librería estándar |
+| Notificaciones | Librería de toasts del template |
+| Datos | **Simulados en cliente** tras interfaz tipada — sin llamadas de red reales |
+| Autenticación | **Fuera de alcance.** Si se necesita, se simula un usuario/rol fijo tras un servicio de contexto |
+
+**Explícitamente fuera de alcance:** backend, base de datos, autenticación real, tiempo real, internacionalización, CI/CD, despliegue. Cualquiera de estos elementos que aparezca en una spec debe marcarse como *fuera de alcance de la POC*, no implementarse a medias.
+
+Aplicaciones CLI/Desktop no están permitidas. El resultado esperado siempre es una aplicación web.
+
+## Flujo de desarrollo y quality gates
+
+### Fases (reducidas)
+
+| Fase | Salida | Gate |
+|---|---|---|
+| 1 — Backlog | PBIs (active-pbi.md) | Trazables desde el PBI cargado por corp.load |
+| 2 — Implementación | Código + documentación generada por corp.doc | Verificación unidad por unidad |
+
+Roadmap y validación de consistencia entre capas se omiten: con una sola capa no aportan.
+
+### Reglas de ejecución
+
+- **Unidad por unidad**, secuencial. No se inicia la siguiente sin verificar la actual.
+- **Orden dentro de una unidad:** modelos/contratos → servicio (con implementación simulada) → componentes → rutas → integración.
+- **Partición vertical:** cada PBI entrega una pantalla o flujo completo y demostrable, nunca "todos los modelos" o "todos los servicios".
+- **Sin avance silencioso:** el paso entre unidades o fases requiere aprobación explícita.
+
+### Criterios de aceptación de un PBI
+
+- [ ] Criterios de aceptación testables.
+- [ ] Verificación visual en los tres breakpoints.
+- [ ] Estados vacío, de carga y de error cubiertos.
+
+### Testing
+
+Cobertura mínima: servicios (con datos simulados), guards, mappers y toda matriz de decisión explícita (estado × rol, visibilidad de acciones). Los componentes se verifican visualmente. Sin exigencia de cobertura porcentual en POC.
 
 ## Governance
-<!-- Example: Constitution supersedes all other practices; Amendments require documentation, approval, migration plan -->
 
-[GOVERNANCE_RULES]
-<!-- Example: All PRs/reviews must verify compliance; Complexity must be justified; Use [GUIDANCE_FILE] for runtime development guidance -->
+**Alcance.** Esta variante rige **exclusivamente** proyectos de solo frontend en fase de prueba de concepto. En el momento en que aparezca backend, persistencia o despliegue real, se sustituye por la constitución corporativa completa — no se amplía esta.
 
-**Version**: [CONSTITUTION_VERSION] | **Ratified**: [RATIFICATION_DATE] | **Last Amended**: [LAST_AMENDED_DATE]
-<!-- Example: Version: 2.1.1 | Ratified: 2025-06-13 | Last Amended: 2025-07-16 -->
+**Protected Corporate Documentation.** Corporate framework documentation is protected and cannot be modified by feature implementation activities unless the approved PBI explicitly requests a framework documentation change.
+
+Protected documentation includes:
+
+- docs/user-guide.md
+- docs/installation-guide.md
+- docs/maintenance.md
+- docs/architecture.md
+- docs/governance.md
+- docs/release-checklist.md
+
+Feature implementations must store implementation evidence, delivery documentation, validation results and implementation notes only within the corresponding feature directory.
+
+Examples:
+
+- features/<feature>/evidence.md
+- features/<feature>/delivery-doc.md
+
+When an improvement opportunity is identified for protected documentation, it must be recorded as a finding, recommendation or improvement backlog item and must not be applied automatically.
+
+Any modification of protected documentation requires an explicitly approved governance change request.
+
+**Supremacía.** Prevalece sobre preferencias individuales. El template corporativo de frontend y el design system son normativos por referencia.
+
+**Excepciones.** Solo con autorización explícita y razonada del responsable técnico, registrada como ADR breve con motivo y alcance. No hay excepciones tácitas.
+
+**Deuda declarada.** Todo atajo aceptado por tratarse de una POC se anota como deuda explícita en el delta resultante, con la condición que lo haría inaceptable en producción. Una POC sin deuda declarada es una POC que miente.
+
+**Enmiendas.** Versionado semántico, con sufijo `-lite` para distinguir el linaje. MAJOR = redefinición incompatible de un principio; MINOR = principio o sección nueva; PATCH = aclaración de redacción.
+
+**Version**: 1.0.0-lite | **Ratified**: 2026-07-24 | **Last Amended**: 2026-07-24

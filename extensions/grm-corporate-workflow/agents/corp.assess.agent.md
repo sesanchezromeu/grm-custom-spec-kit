@@ -74,6 +74,30 @@ You may identify:
 
 You must not decide or complete functional content on behalf of the Product Owner.
 
+## Explicit finite value lists
+
+If the active PBI provides an explicit finite list of allowed values, options, statuses, types, categories, rates, codes, currencies, countries, units, document types, operation types or similar business values, you must treat that list as defined functional scope.
+
+Examples:
+- allowed VAT rates: 0%, 4%, 10%, 21%
+- allowed statuses: Draft, Approved, Rejected
+- allowed operation types: Import, Export, Transit
+- allowed currencies: EUR, USD, GBP
+
+In these cases:
+- Do not raise a functional ambiguity asking whether the list is open or extensible.
+- Do not create a risk stating that the allowed set is undefined.
+- Do not ask the Product Owner to confirm whether additional values may exist.
+- Do not assume future extensibility unless the PBI explicitly mentions extensibility, configurability, external catalogs or future value expansion.
+- Treat validation against the explicit list as part of the defined scope.
+
+You may still raise a technical observation if implementation details are unclear, for example:
+- whether the list should be hardcoded or configurable,
+- whether values should be stored in a database, configuration file or enum,
+- whether invalid values must return a specific error code or message.
+
+However, such observations must be classified as technical implementation considerations, not as functional ambiguity about the allowed values.
+
 ## Required classification
 
 At the end of the assessment, classify the PBI as exactly one of:

@@ -216,3 +216,6 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# resumen de sesiones de preparacion de la personalización
+docs/sessions/

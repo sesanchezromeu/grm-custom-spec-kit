@@ -61,7 +61,30 @@ extensions + presets
 
 ---
 
-## 3. Governance Validation
+## 3. Bootstrap Validation
+
+### Installer Assets
+
+- [ ] resources/bootstrap/bootstrap-grm-e2e.ps1
+- [ ] resources/bootstrap/bootstrap-grm-e2e.bat
+- [ ] resources/bootstrap/README.md
+
+### Bootstrap Execution
+
+- [ ] Clean installation executed
+- [ ] Git-first clone successful
+- [ ] Runtime validation passed
+- [ ] installation-report.md generated
+
+### Supporting Assets
+
+- [ ] samples copied
+- [ ] docs copied
+- [ ] docs/sessions not distributed
+
+---
+
+## 4. Governance Validation
 
 Verify governance controls remain effective.
 
@@ -84,7 +107,7 @@ Verify governance controls remain effective.
 
 ---
 
-## 4. Functional Validation
+## 5. Functional Validation
 
 Validate the complete workflow.
 
@@ -104,7 +127,7 @@ Validate the complete workflow.
 
 ---
 
-## 5. End-to-End Validation
+## 6. End-to-End Validation
 
 Execute a complete validation scenario.
 
@@ -136,7 +159,7 @@ Expected artifacts:
 
 ---
 
-## 6. Documentation Validation
+## 7. Documentation Validation
 
 Verify documentation remains aligned with implementation.
 
@@ -163,7 +186,7 @@ Verify documentation remains aligned with implementation.
 
 ---
 
-## 7. Repository Validation
+## 8. Repository Validation
 
 Verify repository structure.
 
@@ -187,7 +210,7 @@ README.md
 
 ---
 
-## 8. Versioning Validation
+## 9. Versioning Validation
 
 - [ ] Version assigned
 - [ ] CHANGELOG updated
@@ -204,7 +227,7 @@ v2.x  Major Evolution
 
 ---
 
-## 9. Handover Validation
+## 10. Handover Validation
 
 Applicable when ownership is transferred.
 
@@ -217,7 +240,7 @@ Applicable when ownership is transferred.
 
 ---
 
-## 10. Release Approval
+## 11. Release Approval
 
 Release can be approved when all previous sections are complete.
 

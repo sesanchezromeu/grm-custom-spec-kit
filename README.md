@@ -18,8 +18,8 @@ The objective is to combine:
 - Spec Driven Development (SDD)
 - Corporate governance
 - End-to-end traceability
+- Git-first installation
 - Maximum reuse of native Spec Kit capabilities
-- Zero modification of the Spec Kit core
 
 The framework ensures that all delivery work originates from an approved Product Backlog Item (PBI), preserving ownership, traceability and governance throughout the entire lifecycle.
 
@@ -174,57 +174,31 @@ Provides architecture, governance, usage and maintenance guidance.
 
 # Quick Start
 
-## 1. Create a Clean Spec Kit Project
+## Option A - Portable Bootstrap (Recommended)
 
-```bash
-specify init --here
+```powershell
+.\resources\bootstrap\bootstrap-grm-e2e.bat -TargetName e2e-demo-01 -Force
 ```
 
-## 2. Apply GRM Customization
+The bootstrap installer:
 
-Copy the GRM customization into the repository.
+- Creates a clean workspace
+- Executes deterministic Spec Kit initialization
+- Downloads the customization from Git
+- Applies runtime synchronization
+- Copies samples and documentation
+- Generates installation-report.md
+- Validates the runtime
 
-## 3. Load an Approved PBI
+## Option B - Manual Installation
+
+Follow:
 
 ```text
-/corp.load --file <pbi.md>
+docs/installation-guide.md
 ```
 
-## 4. Assess Readiness
-
-```text
-/corp.assess
-```
-
-## 5. Generate Bootstrap Specification
-
-```text
-/corp.plan
-```
-
-## 6. Execute Native Planning
-
-```text
-/speckit.plan
-```
-
-## 7. Generate Tasks
-
-```text
-/speckit.tasks
-```
-
-## 8. Implement
-
-```text
-/speckit.implement
-```
-
-## 9. Generate Delivery Documentation
-
-```text
-/corp.doc
-```
+Manual and bootstrap installations must produce the same validated result.
 
 ---
 
@@ -277,10 +251,14 @@ Validated outcomes:
 ```text
 .github/
 .specify/
-.vscode/
 docs/
 extensions/
 presets/
+resources/
+├── bootstrap/
+│   ├── bootstrap-grm-e2e.bat
+│   ├── bootstrap-grm-e2e.ps1
+│   └── README.md
 samples/
 ```
 
@@ -294,7 +272,8 @@ README.md
 ├── docs/user-guide.md
 ├── docs/architecture.md
 ├── docs/governance.md
-└── docs/maintenance.md
+├── docs/maintenance.md
+└── docs/release-checklist.md
 ```
 
 Recommended reading order:
@@ -308,16 +287,28 @@ Recommended reading order:
 
 ---
 
+## Validation Status
+
+Validated:
+
+- Governance enforcement
+- Corporate workflow
+- Runtime synchronization
+- Git-first installer
+- Documentation packaging
+- End-to-end validation
+
+---
+
 ## Release Status
+
 
 Current Status: Release Candidate
 
-Validated:
-- Governance model
-- Corporate workflow
-- Documentation
-- Packaging
+Release readiness requires successful completion of:
 
-Pending:
-- Community adoption
-- Future automation improvements
+- Release checklist
+- Bootstrap validation
+- Governance validation
+- End-to-end validation
+

@@ -1,0 +1,110 @@
+schema_version: "1.0"
+
+workflow:
+  id: "grm"
+  name: "GRM PBI-First Corporate Delivery Workflow"
+  version: "1.0.0"
+  author: "GRM"
+  description: "Runs the GRM corporate PBI-first delivery workflow with governance gates"
+
+requires:
+  speckit_version: ">=0.8.5"
+  integrations:
+    any:
+      - "copilot"
+
+inputs:
+  pbi:
+    type: string
+    required: true
+    prompt: "Validated PBI identifier or PBI reference approved by Product Owner"
+
+  integration:
+    type: string
+    default: "auto"
+    prompt: "Integration to use. Use 'auto' to use the project's initialized integration"
+
+steps:
+  - id: load-pbi
+    command: corp.load
+    integration: "{{ inputs.integration }}"
+    input:
+      args: "{{ inputs.pbi }}"
+
+  - id: review-loaded-pbi
+    type: gate
+    message: "Review that the validated PBI has been loaded correctly and the active context is ready."
+    options: [approve, reject]
+    on_reject: abort
+
+  - id: assess-pbi
+    command: corp.assess
+    integration: "{{ inputs.integration }}"
+    input:
+      args: "{{ inputs.pbi }}"
+
+  - id: review-assessment
+    type: gate
+    message: "Review and approve the corporate assessment before corporate planning."
+    options: [approve, reject]
+    on_reject: abort
+
+  - id: corporate-plan
+    command: corp.plan
+    integration: "{{ inputs.integration }}"
+    input:
+      args: "{{ inputs.pbi }}"
+
+  - id: review-corporate-plan
+    type: gate
+    message: "Review and approve the corporate plan before technical planning."
+    options: [approve, reject]
+    on_reject: abort
+
+  - id: technical-plan
+    command: speckit.plan
+    integration: "{{ inputs.integration }}"
+    input:
+      args: "{{ inputs.pbi }}"
+
+  - id: review-technical-plan
+    type: gate
+    message: "Review and approve the technical plan before task generation."
+    options: [approve, reject]
+    on_reject: abort
+
+  - id: generate-tasks
+    command: speckit.tasks
+    integration: "{{ inputs.integration }}"
+    input:
+      args: "{{ inputs.pbi }}"
+
+  - id: review-tasks
+    type: gate
+    message: "Review generated tasks. Confirm that delivery documentation remains exclusively owned by corp.doc."
+    options: [approve, reject]
+    on_reject: abort
+
+  - id: implement
+    command: speckit.implement
+    integration: "{{ inputs.integration }}"
+    input:
+      args: "{{ inputs.pbi }}"
+
+  - id: review-implementation
+    type: gate
+    message: "Review implementation output and available evidence before delivery documentation."
+    options: [approve, reject]
+    on_reject: abort
+
+  - id: delivery-documentation
+    command: corp.doc
+    integration: "{{ inputs.integration }}"
+    input:
+      args: "{{ inputs.pbi }}"
+
+  - id: review-delivery-documentation
+    type: gate
+    message: "Review final delivery documentation for the PBI."
+    options: [approve, reject]
+    on_reject: abort

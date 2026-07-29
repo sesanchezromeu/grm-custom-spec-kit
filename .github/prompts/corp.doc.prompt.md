@@ -1,194 +1,177 @@
-# /corp.doc - Corporate As-Built Documentation
+## /corp.doc - Corporate As-Built Documentation
 
-You are executing the GRM corporate command `/corp.doc`.
-
+You are executing the GRM corporate command /corp.doc.
 Your task is to generate the authoritative as-built documentation for the active feature.
-
 This command is part of the GRM Spec Driven Development workflow.
 
-## Objective
+### Objective
 
 Document what has actually been implemented for the active PBI and compare it against the original PBI baseline.
-
 The main goal is to identify and document:
-
 - What the PBI requested.
 - What has actually been implemented.
 - Real deviations from the PBI.
 - Validation gaps.
 - Technical debt.
-- Executed and inspected validation evidence.
+- Existing inspected validation evidence.
 - Follow-up work that should be addressed in future PBIs.
 
 The generated document must be a faithful snapshot of the implemented solution.
 
-## Operating Context
-
-You are working inside the `grm-validation` project.
-
-Do not assume the existence of presets or extensions.
-
-The current command is being validated in `grm-validation` before being migrated to `grm-custom-spec-kit`.
-
-## Corporate Flow Context
+### Corporate Flow Context
 
 The validated flow is:
 
-```text
 PBI
-↓
-corp.load
-↓
-corp.assess
-↓
-corp.plan
-↓
-speckit.plan
-↓
-speckit.tasks
-↓
-speckit.implement
-↓
-corp.doc
-```
+-> corp.load
+-> corp.assess
+-> corp.plan
+-> speckit.plan
+-> speckit.tasks
+-> speckit.implement
+-> corp.doc
 
-The `/corp.doc` command runs after implementation.
+The /corp.doc command runs after implementation.
+It does not plan, implement, fix, refactor, test, or modify the solution.
+It only documents the implemented reality and the existing evidence.
 
-It does not plan, implement, fix, refactor, or modify the solution.
+### Responsibility Boundary
 
-It only documents the implemented reality.
+/corp.doc is documentation-only.
 
-## Mandatory Behavior
+It must not:
+- Execute tests.
+- Execute Playwright.
+- Run npm test.
+- Run unit tests.
+- Run acceptance checks.
+- Start local servers.
+- Generate new validation evidence.
+- Modify source code.
+- Modify tests.
+- Modify implementation artifacts.
+- Modify planning artifacts.
+- Fix detected findings.
 
-1. Read the active PBI from `.specify/memory/active-pbi.md` or `active-pbi.md`.
-2. Identify the active feature folder under `features/`.
-3. Read `spec.md` from the active feature folder.
-4. Read `tasks.md` from the active feature folder.
-5. Read optional planning artifacts if available:
-   - `plan.md`
-   - `research.md`
-   - `data-model.md`
-   - `quickstart.md`
-6. Inspect implementation artifacts.
-7. Inspect test artifacts.
-8. Execute available validation mechanisms when safe and feasible.
-9. Look for available validation evidence.
-10. Compare the PBI baseline against the implemented reality.
-11. Detect real deviations from the PBI.
-12. Detect validation gaps separately from deviations.
-13. Detect technical debt separately from deviations and validation gaps.
-14. Generate improvement backlog candidates.
-15. Generate or update `delivery-doc.md` inside the active feature folder.
+Validation execution belongs to /speckit.implement or explicit developer validation before /corp.doc.
+/corp.doc must consume existing evidence only.
 
-## Output File
+### Mandatory Behavior
+
+- Read the active PBI from .specify/memory/active-pbi.md or active-pbi.md.
+- Identify the active feature folder under features/.
+- Prefer .specify/feature.json when resolving the active feature folder.
+- Read spec.md from the active feature folder.
+- Read tasks.md from the active feature folder.
+- Read optional planning artifacts if available:
+  - plan.md
+  - research.md
+  - data-model.md
+  - quickstart.md
+  - contracts/
+- Inspect implementation artifacts.
+- Inspect test artifacts if available.
+- Inspect existing validation evidence if available.
+- Inspect evidence files such as frontend/evidence.md or equivalent if available.
+- Compare the PBI baseline against the implemented reality.
+- Detect real deviations from the PBI.
+- Detect validation gaps separately from deviations.
+- Detect technical debt separately from deviations and validation gaps.
+- Generate improvement backlog candidates.
+- Generate or update the delivery documentation file inside the active feature folder.
+
+### Output File
 
 Create or update:
-
-```text
-features/<active-feature-folder>/delivery-doc.md
-```
+features/<active-feature-folder>/<PBI-ID>-delivery-doc.md
 
 This file is the authoritative as-built documentation for the implemented feature.
 
-## Source of Truth
+If the PBI ID is missing, use the normalized feature folder name as the file prefix:
+features/<active-feature-folder>/<active-feature-folder>-delivery-doc.md
+
+Do not create or update the legacy generic file:
+features/<active-feature-folder>/delivery-doc.md
+
+### Source of Truth
 
 Use the active PBI as the source of truth for what was requested.
-
 Use implementation artifacts as the source of truth for what was actually built.
-
-Use executed validations, validation artifacts, and available logs as the source of truth for what was actually verified.
+Use existing validations, validation artifacts, evidence files, and available logs as the source of truth for what was already verified.
 
 Do not invent evidence.
-
 Do not assume that functionality is validated unless evidence exists.
-
 Do not add requirements that are not present in the PBI.
 
-## Evidence Execution Rules
+### Evidence Rules
 
-Prefer runtime evidence over static inspection.
-
-When executable validation mechanisms are available, execute them before generating the document when safe and feasible.
-
-Examples:
-
-- Run `npm test` if `package.json` contains a test script.
-- Run available unit tests.
-- Run lightweight acceptance checks when they can be executed without modifying code or relying on external services.
+Use only existing evidence.
+Do not execute validation mechanisms.
 
 The generated document must clearly identify:
-
-- Inspected evidence.
-- Executed evidence.
+- Existing executed validation evidence.
+- Inspected implementation evidence.
+- Inspected test evidence.
+- Existing manual validation evidence.
 - Missing evidence.
 - Not verified behavior.
 
-If a validation cannot be executed safely, explain why and mark it as `NOT_VERIFIED`.
+If tests exist but there is no evidence that they were executed, use:
+NOT_VERIFIED
 
-## As-Built Documentation Structure
+If validation information is not available, use:
+NOT_FOUND
+
+### As-Built Documentation Structure
 
 Generate the document using this structure:
 
-````markdown
 # As-Built Documentation - <PBI ID> - <Title>
 
 ## 1. Executive Summary
-
 ### Final Status
-
 - Status: <COMPLIANT | COMPLIANT_WITH_FINDINGS | NON_COMPLIANT>
 - PBI: <PBI ID>
 - Feature folder: <path>
+- Delivery document: <path>
 - Generated by: /corp.doc
 - Generated at: <timestamp>
 
 ### Summary
-
 <Short summary of what was implemented and the overall assessment.>
 
 ---
 
 ## 2. PBI Baseline
-
 ### Objective
-
 <Objective from the PBI>
 
 ### Functional Scope
-
 <Functional scope from the PBI>
 
 ### Business Rules
-
 <Business rules from the PBI>
 
 ### Acceptance Criteria
-
 <Acceptance criteria from the PBI>
 
 ### Technical Restrictions
-
 <Technical restrictions from the PBI>
 
 ### Out of Scope
-
 <Out of scope items from the PBI>
 
 ---
 
 ## 3. Implemented Reality
-
 ### Implementation Summary
-
 <What has actually been built.>
 
 ### Implemented Files
-
 | Artifact | Status | Path | Notes |
 |---|---|---|---|
 
 ### Technical Solution
-
 - Architecture:
 - Runtime:
 - Dependencies:
@@ -199,295 +182,197 @@ Generate the document using this structure:
 ---
 
 ## 4. Change Summary
-
 ### New Capabilities
-
 - <Capability 1>
 - <Capability 2>
 
 ### Modified Implementation Artifacts
-
 | Artifact | Change Type | Notes |
 |---|---|---|
 
 ### Generated or Updated Validation Assets
-
 | Artifact | Purpose | Notes |
 |---|---|---|
 
 ### Documentation Artifacts
-
 | Artifact | Purpose | Notes |
 |---|---|---|
 
 ---
 
 ## 5. Expected vs Implemented Summary
-
 | Category | Total | Match | Partial Match | Not Implemented | Not Verified | Notes |
 |---|---:|---:|---:|---:|---:|---|
 
 ### Detailed Findings
-
 Only include detailed rows for items that are not fully matched or not fully verified.
 
 | PBI Requirement / Acceptance Criterion | Expected According to PBI | Implemented Reality | Evidence | Status |
 |---|---|---|---|---|
 
 Status values:
-
-- `MATCH`
-- `PARTIAL_MATCH`
-- `NOT_IMPLEMENTED`
-- `NOT_VERIFIED`
-- `NOT_FOUND`
-- `OUT_OF_SCOPE_IMPLEMENTED`
+- MATCH
+- PARTIAL_MATCH
+- NOT_IMPLEMENTED
+- NOT_VERIFIED
+- NOT_FOUND
+- OUT_OF_SCOPE_IMPLEMENTED
 
 If all items match and are verified, write:
-
-`All detected PBI requirements and acceptance criteria are implemented according to available evidence.`
+All detected PBI requirements and acceptance criteria are implemented according to available evidence.
 
 ---
 
 ## 6. Deviations from PBI
-
 ### Summary
-
 - Deviations found: <number>
 - Overall impact: <NONE | LOW | MEDIUM | HIGH>
 
 ### Deviations
-
 | ID | Type | Description | PBI Baseline | Implemented Reality | Evidence | Impact | Recommendation |
 |---|---|---|---|---|---|---|---|
 
 If no deviations are found, write:
-
-`No deviations from the PBI were detected based on available evidence.`
+No deviations from the PBI were detected based on available evidence.
 
 ---
 
 ## 7. Validation Gaps
-
 ### Summary
-
 - Validation gaps found: <number>
 - Overall impact: <NONE | LOW | MEDIUM | HIGH>
 
 ### Validation Gaps
-
 | ID | Description | Evidence | Impact | Recommendation | Potential Future PBI |
 |---|---|---|---|---|---|
 
 If no validation gaps are found, write:
-
-`No validation gaps were detected based on available evidence.`
+No validation gaps were detected based on available evidence.
 
 ---
 
 ## 8. Technical Debt
-
 ### Summary
-
 - Technical debt items found: <number>
 - Overall impact: <NONE | LOW | MEDIUM | HIGH>
 
 ### Debt Items
-
 | ID | Category | Description | Evidence | Impact | Recommendation | Potential Future PBI |
 |---|---|---|---|---|---|---|
 
 If no technical debt is found, write:
-
-`No technical debt was detected based on available evidence.`
+No technical debt was detected based on available evidence.
 
 ---
 
 ## 9. Validation Evidence
-
-### Executed Validation
-
-| Validation | Command | Result | Evidence | Status |
+### Existing Executed Validation Evidence
+| Validation | Command or Source | Result | Evidence | Status |
 |---|---|---|---|---|
 
 ### Inspected Evidence
-
 | Evidence | Source | Finding | Status |
 |---|---|---|---|
 
 ### Manual Validation
-
 | Scenario | Input | Expected Result | Actual Result | Evidence | Status |
 |---|---|---|---|---|---|
 
-If no validation evidence exists, explicitly mark it as `NOT_FOUND`.
-
-If tests exist but there is no execution evidence, mark them as `NOT_VERIFIED`.
+If no validation evidence exists, explicitly mark it as NOT_FOUND.
+If tests exist but there is no execution evidence, mark them as NOT_VERIFIED.
 
 ---
 
 ## 10. Documentation and Traceability
-
 ### Generated Artifacts
-
 | Artifact | Status | Path |
 |---|---|---|
 
 ### Traceability Summary
-
 | Source | Target | Status | Notes |
 |---|---|---|---|
 
 ### Traceability Notes
-
 <Brief notes about traceability from PBI to spec, tasks, implementation and tests.>
 
 ---
 
 ## 11. Risks and Observations
-
 ### Risks
-
 | ID | Description | Impact | Recommendation |
 |---|---|---|---|
 
 ### Observations
-
 | ID | Description | Impact | Recommendation |
 |---|---|---|---|
 
 ---
 
 ## 12. Improvement Backlog Candidates
-
 | ID | Type | Source Finding | Recommendation | Suggested Future PBI Title | Priority |
 |---|---|---|---|---|---|
 
 If no future improvements are recommended, write:
-
-`No improvement backlog candidates were identified based on available evidence.`
+No improvement backlog candidates were identified based on available evidence.
 
 ---
 
 ## 13. Final Assessment
-
 ### Compliance Status
-
 <COMPLIANT | COMPLIANT_WITH_FINDINGS | NON_COMPLIANT>
 
 ### Conclusion
-
 <Final concise conclusion.>
 
 ### Recommended Next Actions
-
 <List of recommended actions, especially future PBIs for deviations, validation gaps, or technical debt.>
-````
 
-## Deviation Detection Rules
+### Deviation Detection Rules
 
 Compare the original PBI against the implemented solution.
-
 A deviation exists only when there is a real difference between what the PBI requested and what was implemented.
-
 Do not classify missing validation evidence as a deviation if the implementation appears aligned with the PBI.
 
 Classify deviations as:
+- SCOPE_DEVIATION
+- FUNCTIONAL_DEVIATION
+- TECHNICAL_DEVIATION
+- DOCUMENTATION_DEVIATION
 
-- `SCOPE_DEVIATION`
-- `FUNCTIONAL_DEVIATION`
-- `TECHNICAL_DEVIATION`
-- `DOCUMENTATION_DEVIATION`
-
-Examples:
-
-- Requested functionality missing from implementation.
-- Implemented functionality not requested in the PBI.
-- Technical restriction violated.
-- Acceptance criterion implemented differently from the PBI.
-- Documentation inconsistent with implementation.
-
-For each deviation, include:
-
-- ID.
-- Type.
-- Description.
-- PBI baseline.
-- Implemented reality.
-- Evidence.
-- Impact.
-- Recommendation.
-
-## Validation Gap Detection Rules
+### Validation Gap Detection Rules
 
 A validation gap is not the same as a deviation.
-
 A validation gap exists when functionality appears implemented but evidence is incomplete or missing.
 
-Examples:
-
-- Tests exist but no execution result is available.
-- Logic-level tests pass but no browser/UI evidence exists.
-- Manual validation was expected but no recorded evidence exists.
-- Acceptance criteria are implemented but not directly verified.
-
-For each validation gap, include:
-
-- ID.
-- Description.
-- Evidence.
-- Impact.
-- Recommendation.
-- Potential future PBI.
-
-## Technical Debt Detection Rules
+### Technical Debt Detection Rules
 
 Technical debt is not the same as a deviation or validation gap.
-
 Technical debt is a known limitation, shortcut, quality gap, maintainability concern, environment issue, developer experience issue, or improvement opportunity that may require future work.
 
 Classify technical debt as:
+- TEST_COVERAGE
+- ENVIRONMENT
+- LOCAL_EXECUTION
+- ENCODING
+- MAINTAINABILITY
+- DOCUMENTATION
+- DEV_EXPERIENCE
+- OTHER
 
-- `TEST_COVERAGE`
-- `ENVIRONMENT`
-- `LOCAL_EXECUTION`
-- `ENCODING`
-- `MAINTAINABILITY`
-- `DOCUMENTATION`
-- `DEV_EXPERIENCE`
-- `OTHER`
+### Change Summary Rules
 
-For each item, include:
-
-- ID.
-- Category.
-- Description.
-- Evidence.
-- Impact.
-- Recommendation.
-- Potential future PBI.
-
-## Change Summary Rules
-
-Always include a concise `Change Summary` section.
-
+Always include a concise Change Summary section.
 Capture:
-
 - New capabilities delivered.
 - Modified implementation artifacts.
 - Generated or updated validation assets.
 - Documentation artifacts created or updated.
 
-This section should allow a reviewer to understand what changed without reading the full implementation.
-
-## Traceability Rules
+### Traceability Rules
 
 Use a concise traceability summary by default.
-
 Avoid very large traceability tables unless needed.
-
 Only include detailed rows for items that are:
-
 - Not implemented.
 - Partially implemented.
 - Not verified.
@@ -496,30 +381,10 @@ Only include detailed rows for items that are:
 
 If all items match, summarize rather than listing every matched row.
 
-## Validation Rules
-
-Separate validation evidence into:
-
-- Executed validation.
-- Inspected evidence.
-- Manual validation.
-
-Do not mark validation as passed unless evidence exists.
-
-If tests are present but there is no evidence that they were executed, use:
-
-`NOT_VERIFIED`
-
-If validation information is not available, use:
-
-`NOT_FOUND`
-
-## Improvement Backlog Candidate Rules
+### Improvement Backlog Candidate Rules
 
 Create improvement backlog candidates from relevant deviations, validation gaps, and technical debt.
-
 For each candidate include:
-
 - ID.
 - Type.
 - Source finding.
@@ -528,76 +393,61 @@ For each candidate include:
 - Priority.
 
 Suggested types:
-
-- `TESTING`
-- `VALIDATION`
-- `DEV_EXPERIENCE`
-- `DOCUMENTATION`
-- `MAINTAINABILITY`
-- `FUNCTIONAL`
-- `TECHNICAL`
+- TESTING
+- VALIDATION
+- DEV_EXPERIENCE
+- DOCUMENTATION
+- MAINTAINABILITY
+- FUNCTIONAL
+- TECHNICAL
 
 Suggested priorities:
-
-- `LOW`
-- `MEDIUM`
-- `HIGH`
+- LOW
+- MEDIUM
+- HIGH
 
 Do not create artificial candidates if no meaningful future action is needed.
 
-## Final Status Rules
+### Final Status Rules
 
 Use only one of these final statuses:
+- COMPLIANT
+- COMPLIANT_WITH_FINDINGS
+- NON_COMPLIANT
 
-### COMPLIANT
-
-Use when:
-
+Use COMPLIANT when:
 - The implementation matches the PBI.
 - No real deviations exist.
-- Validation evidence is sufficient, or only minor non-blocking findings exist.
+- Existing validation evidence is sufficient, or only minor non-blocking findings exist.
 - Any technical debt or validation gaps are low impact and do not compromise PBI compliance.
 
-### COMPLIANT_WITH_FINDINGS
-
-Use when:
-
+Use COMPLIANT_WITH_FINDINGS when:
 - The implementation is broadly aligned with the PBI.
 - Relevant deviations, validation gaps, technical debt, or risks exist.
 - The feature appears usable but follow-up work is recommended.
 
-### NON_COMPLIANT
-
-Use when:
-
+Use NON_COMPLIANT when:
 - Major PBI requirements are missing.
 - Technical restrictions are violated.
 - Validation is insufficient for a reliable delivery assessment.
 - The implementation cannot be reasonably matched to the PBI.
 
-Missing browser-level evidence alone must not force `COMPLIANT_WITH_FINDINGS` if the PBI is implemented and other validation evidence is sufficient.
+Missing browser-level evidence alone must not force COMPLIANT_WITH_FINDINGS if the PBI is implemented and other validation evidence is sufficient.
 
-## Final Chat Response
+### Final Chat Response
 
 After generating the document, do not paste the full document in the chat.
-
 Respond with a short summary:
 
-```markdown
 /corp.doc completed.
-
 Output:
-- features/<feature-folder>/delivery-doc.md
-
+- features/<feature-folder>/<PBI-ID>-delivery-doc.md
 Final status:
 - <status>
-
 Findings:
 - Deviations: <number>
 - Validation gaps: <number>
 - Technical debt: <number>
 - Validation: <PASS | PARTIAL | NOT_VERIFIED | NOT_FOUND>
-
 Recommended next action:
 - <next action>
-```

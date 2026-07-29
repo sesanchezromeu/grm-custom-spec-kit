@@ -1,166 +1,104 @@
-# /corp.erase
+## /corp.erase
 
 Erase the current GRM corporate execution context.
 
-## Objective
+### Objective
 
-Clean the active PBI context and generated feature artifacts so that the next execution starts from a clean state.
-
+Clean the active PBI context while preserving historical feature delivery artifacts so that the next execution starts from a clean active state without losing auditability.
 This command prevents contamination between different PBI executions.
 
-## Cleanup scope
+### Cleanup scope
 
 The command must clean only:
+- .specify/memory/active-pbi.md
+- .specify/feature.json
 
-```text
-.specify/memory/active-pbi.md
-features/
-.specify/feature.json
-```
+The command must preserve:
+- features/<feature-folder>/
 
-## Required actions
+### Required actions
 
-### 1. Reset active PBI memory
+#### 1. Reset active PBI memory
 
 Ensure this directory exists:
-
-```text
 .specify/memory/
-```
 
 Ensure this file exists:
-
-```text
 .specify/memory/active-pbi.md
-```
 
-Overwrite `.specify/memory/active-pbi.md` with exactly this logical content:
+Overwrite .specify/memory/active-pbi.md with exactly this logical content:
 
-```md
 # Active PBI
-
 No PBI loaded.
-```
 
-Minor newline differences at end of file are acceptable.
-
-### 2. Clean generated features
+#### 2. Preserve historical features
 
 Ensure this directory exists:
-
-```text
 features/
-```
 
-Delete all files and subdirectories inside:
+Do not delete files or subdirectories inside features/.
 
-```text
-features/
-```
+Do not delete historical feature folders such as:
+features/<feature-folder>/
 
-Do not permanently delete the `features/` directory. If the directory is removed during cleanup, recreate it.
+Do not delete historical delivery artifacts such as:
+- spec.md
+- plan.md
+- tasks.md
+- research.md
+- quickstart.md
+- data-model.md
+- contracts/
+- delivery documentation files
 
-### 3. Remove active feature pointer
+If the features/ directory does not exist, recreate it.
+
+#### 3. Remove active feature pointer
 
 If this file exists:
-
-```text
 .specify/feature.json
-```
 
 delete it.
 
 If it does not exist, report it as skipped.
 
-## Execution guidance for Windows / VS Code
-
-When running in PowerShell, use native PowerShell commands.
-
-Do not use Python heredoc commands such as:
-
-```text
-python - <<'PY'
-```
-
-Do not use multiline `python -c` commands.
-
-The preferred implementation is a simple PowerShell cleanup sequence using:
-
-- `New-Item`
-- `Set-Content`
-- `Get-ChildItem`
-- `Remove-Item`
-- `Test-Path`
-
-This avoids shell quoting issues and prevents the command from blocking.
-
-## Verification
+### Verification
 
 After cleanup, verify that:
+- .specify/memory/active-pbi.md exists.
+- .specify/memory/active-pbi.md contains No PBI loaded.
+- features/ exists.
+- Historical feature folders and artifacts under features/ were not deleted.
+- .specify/feature.json does not exist.
 
-- `.specify/memory/active-pbi.md` exists.
-- `.specify/memory/active-pbi.md` contains `No PBI loaded.`
-- `features/` exists.
-- `features/` is empty.
-- `.specify/feature.json` does not exist.
+### Mandatory output format
 
-## Mandatory output format
-
-The final response is not free-form text. It is a strict command report. Copy the template exactly and only replace the placeholder values.
-
-Only replace the placeholders `<done|failed>`, `<done|skipped|failed>` and `<yes|no>` with the actual values.
-
-Do not change, shorten, translate, rename, summarize, or paraphrase any label.
-
-The path labels must appear exactly as written.
-
-```text
 Corporate context erased.
-
 Actions:
 - .specify/memory/active-pbi.md reset: <done|failed>
-- features/ cleaned: <done|failed>
+- features/ preserved: <done|failed>
 - .specify/feature.json removed: <done|skipped|failed>
-
 Verification:
 - .specify/memory/active-pbi.md ready: <yes|no>
-- features/ empty: <yes|no>
+- features/ exists: <yes|no>
+- historical feature artifacts preserved: <yes|no>
 - .specify/feature.json absent: <yes|no>
-
 Status:
-Clean environment ready for /corp.load
-```
+Clean active context ready for /corp.load
 
-## Reporting constraints
-
-The following labels are not allowed in the final response:
-
-```text
-active-pbi.md reset
-features cleaned
-The active feature pointer file removed
-The active feature pointer file absent
-```
-
-Always use the full repository-relative labels from the mandatory output format.
-
-## Constraints
+### Constraints
 
 Do not modify:
+- .github/
+- .specify/templates/
+- .specify/scripts/
+- docs/
+- extensions/
+- presets/
+- samples/
+- resources/
+- README.md
+- LICENSE
 
-```text
-.github/
-.specify/templates/
-.specify/scripts/
-docs/
-extensions/
-presets/
-samples/
-resources/
-README.md
-LICENSE
-```
-
-Do not continue silently if a required cleanup action fails. Report the failure clearly.
-
+Do not continue silently if a required cleanup action fails.
 Do not report success unless all verification checks pass.

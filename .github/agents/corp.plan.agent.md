@@ -1,4 +1,7 @@
+---
+name: corp.plan
 description: Create the minimum corporate bootstrap specification required to continue with /speckit.plan while preserving the active PBI as the single source of functional truth.
+---
 
 ##### User Input
 

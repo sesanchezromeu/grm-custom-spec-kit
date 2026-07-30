@@ -1,63 +1,89 @@
 # GRM Custom Spec Kit - Release Checklist
 
-Document Version: 1.0
-Last Updated: 2026-07-22
+Document Version: 1.1
+Last Updated: 2026-07-30
 Status: Release Candidate
 
+## Purpose
+
+This checklist provides the mandatory validation activities required before approving a GRM Custom Spec Kit release, handover, package publication or release tag.
+
+The objective is to verify:
+
+- Source of Truth integrity.
+- Runtime synchronization.
+- Governance enforcement.
+- Workflow deployment.
+- Bootstrap readiness.
+- Documentation quality.
+- End-to-end operability.
+
+A release must not be approved until all applicable sections are completed successfully.
+
 ---
-
-# Purpose
-
-This checklist provides a concise and repeatable process for validating a GRM Custom Spec Kit release.
-
-It is intended to be used by maintainers before publishing a new version, release tag or repository handover.
-
-This document does not replace the Maintenance Guide.
-
-Instead, it acts as an operational summary of the activities required to confirm release readiness.
-
----
-
-# Release Readiness Checklist
 
 ## 1. Source of Truth Validation
 
-Verify the authoritative customization definition is complete and up to date.
-
 ### Extensions
 
-- [ ] All changes committed to `extensions/grm-corporate-workflow`
+- [ ] Changes committed to `extensions/grm-corporate-workflow`
 - [ ] README updated
 - [ ] CHANGELOG updated
-- [ ] Agents validated
-- [ ] Prompts validated
+- [ ] Corporate agents reviewed
+- [ ] Corporate prompts reviewed
+- [ ] Governance behavior validated
 
 ### Presets
 
-- [ ] All changes committed to `presets/grm-corporate-governance`
+- [ ] Changes committed to `presets/grm-corporate-governance`
 - [ ] README updated
 - [ ] CHANGELOG updated
 - [ ] Governance rules validated
+- [ ] Corporate workflows validated
+
+### Workflow Source of Truth
+
+- [ ] `presets/grm-corporate-governance/workflows/grm/workflow.yml` reviewed
+- [ ] `presets/grm-corporate-governance/workflows/workflow-registry.json` reviewed
+- [ ] Workflow version aligned with release scope
 
 ---
 
 ## 2. Runtime Synchronization Validation
 
-Verify the runtime reflects the current Source of Truth.
+### Copilot Runtime
 
-- [ ] Runtime synchronized from Extensions
-- [ ] Runtime synchronized from Presets
+- [ ] Runtime synchronized from extensions
+- [ ] Runtime synchronized from presets
 - [ ] Corporate commands available
 - [ ] Governance guards available
-- [ ] No known Source of Truth / Runtime drift
+- [ ] No known runtime drift
 
-Verify:
+### Workflow Runtime
+
+- [ ] `.specify/workflows/grm/workflow.yml` deployed
+- [ ] `.specify/workflows/speckit/workflow.yml` preserved
+- [ ] `workflow-registry.json` synchronized
+- [ ] Registry merge validated
+- [ ] No workflow regression detected
+
+### Registry Validation
+
+Expected logical structure:
 
 ```text
-extensions + presets
-        ↓
-      runtime
+schema_version
+workflows
+ ├─ speckit
+ └─ grm
 ```
+
+Checklist:
+
+- [ ] Registry contains `speckit`
+- [ ] Registry contains `grm`
+- [ ] Native workflow preserved
+- [ ] Additive merge validated
 
 ---
 
@@ -65,42 +91,58 @@ extensions + presets
 
 ### Installer Assets
 
-- [ ] resources/bootstrap/bootstrap-grm-e2e.ps1
-- [ ] resources/bootstrap/bootstrap-grm-e2e.bat
-- [ ] resources/bootstrap/README.md
+- [ ] bootstrap-grm-e2e.ps1 updated
+- [ ] bootstrap-grm-e2e.bat updated
+- [ ] bootstrap README updated
+- [ ] bootstrap installation guide updated
 
-### Bootstrap Execution
+### Installation Modes
 
-- [ ] Clean installation executed
-- [ ] Git-first clone successful
-- [ ] Runtime validation passed
+- [ ] FailIfExists validated
+- [ ] CleanInstall validated
+- [ ] UpdateExisting validated
+
+### Clean Installation Validation
+
+- [ ] Clean workspace created
+- [ ] Spec Kit initialized
+- [ ] Runtime synchronized
+- [ ] Workflows deployed
+- [ ] Validation passed
 - [ ] installation-report.md generated
 
-### Supporting Assets
+### Update Validation
 
-- [ ] samples copied
-- [ ] docs copied
-- [ ] docs/sessions not distributed
+- [ ] Existing workspace preserved
+- [ ] Spec Kit init not executed
+- [ ] Runtime updated
+- [ ] Workflows updated
+- [ ] Validation passed
+- [ ] installation-report.md generated
+
+### Safety Validation
+
+- [ ] Existing directory without explicit mode fails safely
+- [ ] No unintended deletion detected
+- [ ] Error message is actionable
 
 ---
 
 ## 4. Governance Validation
-
-Verify governance controls remain effective.
 
 ### Blocked Commands
 
 - [ ] speckit.specify blocked
 - [ ] speckit.clarify blocked
 
-### Protected Commands
+### Guarded Commands
 
-- [ ] speckit.plan protected
-- [ ] Bootstrap validation enforced
+- [ ] speckit.plan requires corporate bootstrap
+- [ ] Governance sequence enforced
 
 ### Governance Principles
 
-- [ ] PBI-first delivery preserved
+- [ ] PBI-first preserved
 - [ ] Product ownership preserved
 - [ ] Traceability preserved
 - [ ] No governance regressions detected
@@ -108,8 +150,6 @@ Verify governance controls remain effective.
 ---
 
 ## 5. Functional Validation
-
-Validate the complete workflow.
 
 ### Corporate Commands
 
@@ -127,11 +167,38 @@ Validate the complete workflow.
 
 ---
 
-## 6. End-to-End Validation
+## 6. Workflow Validation
 
-Execute a complete validation scenario.
+Expected workflow:
 
-Recommended sequence:
+```text
+corp.load
+ ↓
+corp.assess
+ ↓
+corp.plan
+ ↓
+speckit.plan
+ ↓
+speckit.tasks
+ ↓
+speckit.implement
+ ↓
+corp.doc
+```
+
+Checklist:
+
+- [ ] Workflow GRM executable
+- [ ] Workflow SPECKIT executable
+- [ ] Runtime workflow aligned with Source of Truth
+- [ ] Registry aligned with runtime
+
+---
+
+## 7. End-to-End Validation
+
+Recommended scenario:
 
 ```text
 corp.erase
@@ -159,42 +226,34 @@ Expected artifacts:
 
 ---
 
-## 7. Documentation Validation
-
-Verify documentation remains aligned with implementation.
+## 8. Documentation Validation
 
 ### Core Documentation
 
 - [ ] README updated
-- [ ] Architecture Guide updated
 - [ ] Installation Guide updated
 - [ ] User Guide updated
+- [ ] Architecture Guide updated
 - [ ] Governance Guide updated
 - [ ] Maintenance Guide updated
+- [ ] Release Checklist updated
 
-### Component Documentation
+### Bootstrap Documentation
 
-- [ ] Extension README updated
-- [ ] Preset README updated
+- [ ] resources/bootstrap/README.md updated
+- [ ] bootstrap-installation-guide.md updated
 
 ### Consistency Review
 
 - [ ] Terminology consistent
-- [ ] Source of Truth vs Runtime documented
-- [ ] Governance model documented
-- [ ] Documentation map verified
+- [ ] Source of Truth documented
+- [ ] Runtime documented
+- [ ] Workflow model documented
+- [ ] Bootstrap model documented
 
 ---
 
-## 8. Repository Validation
-
-Verify repository structure.
-
-- [ ] Repository structure reviewed
-- [ ] Obsolete files removed
-- [ ] Samples reviewed
-- [ ] Sessions archived appropriately
-- [ ] Runtime structure verified
+## 9. Repository Validation
 
 Expected structure:
 
@@ -204,86 +263,81 @@ Expected structure:
 docs/
 extensions/
 presets/
+resources/
 samples/
 README.md
 ```
 
+Checklist:
+
+- [ ] Repository structure reviewed
+- [ ] Obsolete files removed
+- [ ] Samples reviewed
+- [ ] Sessions excluded from distribution
+- [ ] Workflow structure verified
+
 ---
 
-## 9. Versioning Validation
+## 10. Versioning Validation
 
 - [ ] Version assigned
 - [ ] CHANGELOG updated
 - [ ] Release scope agreed
 - [ ] Release notes prepared
 
-Recommended format:
+Recommended:
 
 ```text
-v0.x  Experimental
-v1.x  Stable
-v2.x  Major Evolution
+v0.x Experimental
+v1.x Stable
+v2.x Major Evolution
 ```
 
 ---
 
-## 10. Handover Validation
-
-Applicable when ownership is transferred.
+## 11. Handover Validation
 
 - [ ] Documentation complete
-- [ ] Maintenance Guide reviewed
-- [ ] Open issues documented
+- [ ] Maintenance guide reviewed
 - [ ] Known limitations documented
-- [ ] Future roadmap documented
+- [ ] Open issues documented
+- [ ] Roadmap documented
 - [ ] New maintainer identified
 
 ---
 
-## 11. Release Approval
+## 12. Release Decision Matrix
 
-Release can be approved when all previous sections are complete.
-
-Approval Summary:
-
-- [ ] Source of Truth validated
-- [ ] Runtime synchronized
-- [ ] Governance validated
-- [ ] Functional validation completed
-- [ ] Documentation validated
-- [ ] Version assigned
-- [ ] Release approved
+| Area | Status |
+|---|---|
+| Source of Truth | ☐ Pass ☐ Fail |
+| Runtime | ☐ Pass ☐ Fail |
+| Workflows | ☐ Pass ☐ Fail |
+| Governance | ☐ Pass ☐ Fail |
+| Functional Validation | ☐ Pass ☐ Fail |
+| Bootstrap Validation | ☐ Pass ☐ Fail |
+| Documentation | ☐ Pass ☐ Fail |
+| Release Packaging | ☐ Pass ☐ Fail |
 
 ---
 
-# Release Decision
-
-| Area | Status |
-|--------|--------|
-| Source of Truth | ☐ Pass ☐ Fail |
-| Runtime | ☐ Pass ☐ Fail |
-| Governance | ☐ Pass ☐ Fail |
-| Functional Validation | ☐ Pass ☐ Fail |
-| Documentation | ☐ Pass ☐ Fail |
-| Release Packaging | ☐ Pass ☐ Fail |
+## Release Approval
 
 Final Result:
 
 ```text
 ☐ RELEASE APPROVED
-☐ RELEASE REJECTED
+☒ RELEASE REJECTED
 ```
 
----
-
-# Summary
-
-A release is considered ready when:
+A release may be approved only when:
 
 ```text
 Source of Truth
         ↓
 Runtime
+        ↓
+Workflows
         ↓
 Governance
         ↓
@@ -294,4 +348,4 @@ Documentation
 Release
 ```
 
-All stages must be completed successfully before approval.
+All applicable stages must be completed successfully.

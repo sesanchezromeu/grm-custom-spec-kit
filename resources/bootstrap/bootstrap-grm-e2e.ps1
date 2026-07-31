@@ -216,7 +216,7 @@ function Copy-ManifestFile {
     }
 
     Copy-Item -Path $From -Destination $To -Force
-    if ($Deployed) { $Deployed.Add("$Label|$From|$To") | Out-Null }
+    if ($null -ne $Deployed) { $Deployed.Add("$Label|$From|$To") | Out-Null }
     Write-Ok "Deployed $Label"
     return $true
 }
@@ -314,6 +314,73 @@ function Assert-NativePreservedIntact {
         $verified.Add($file) | Out-Null
     }
     return $verified
+}
+
+function Assert-DeployedProvenance {
+    # Verifica que cada artefacto desplegado (label|origen|destino)
+    # tiene en destino el mismo contenido que su origen en el SoT.
+    # Acumula divergencias en la lista Missing (patron existente).
+    # Cumple CA-02 / PC-04.
+    param(
+        [System.Collections.Generic.List[string]]$Deployed,
+        [ref]$Missing
+    )
+    foreach ($entry in $Deployed) {
+        $parts = $entry -split '\|', 3
+        if ($parts.Count -lt 3) { continue }
+        $from = $parts[1]
+        $to   = $parts[2]
+
+        if (-not (Test-Path $to)) {
+            $Missing.Value += "provenance-missing: $to"
+            continue
+        }
+        if (-not (Test-Path $from)) {
+            $Missing.Value += "provenance-source-missing: $from"
+            continue
+        }
+        $hashFrom = (Get-FileHash -Path $from -Algorithm SHA256).Hash
+        $hashTo   = (Get-FileHash -Path $to -Algorithm SHA256).Hash
+        if ($hashFrom -ne $hashTo) {
+            $Missing.Value += "provenance-mismatch: $to"
+        }
+    }
+}
+
+function Get-UndeployedMemoryFiles {
+    # Lista ficheros de memory/ presentes en el SoT pero NO declarados
+    # en deploys.memory. Informativo (H-INST-07). Devuelve nombres.
+    param([string]$SourceRepoPath)
+
+    $memoryDir = Join-Path $SourceRepoPath "presets/grm-corporate-governance/memory"
+    if (-not (Test-Path $memoryDir)) { return @() }
+
+    $preYml = Join-Path $SourceRepoPath "presets/grm-corporate-governance/preset.yml"
+    # deploys.memory declara pares source/target; extraemos los 'source:'
+    $declaredSources = @()
+    if (Test-Path $preYml) {
+        $inDeploys = $false; $inMemory = $false
+        foreach ($raw in (Get-Content $preYml)) {
+            $line = $raw -replace '\t','    '
+            if ($line -match '^\s*#') { continue }
+            $trimmed = $line.Trim()
+            if ($trimmed -match '^deploys:') { $inDeploys = $true; continue }
+            if ($inDeploys -and $trimmed -match '^memory:') { $inMemory = $true; continue }
+            if ($inDeploys -and $line -match '^\S') { $inDeploys = $false; $inMemory = $false }
+            if ($inMemory -and $trimmed -match '^-?\s*source:\s*(.+)$') {
+                $src = $Matches[1].Trim().Trim('"').Trim("'")
+                $declaredSources += (Split-Path -Path $src -Leaf)
+            }
+        }
+    }
+
+    $undeployed = @()
+    Get-ChildItem -Path $memoryDir -File | ForEach-Object {
+        if ($declaredSources -notcontains $_.Name) {
+            $undeployed += "memory/$($_.Name)"
+        }
+    }
+    return $undeployed
 }
 
 function Invoke-GitChecked {
@@ -645,6 +712,9 @@ function New-InstallationReport {
         [bool]$DocsCopied,
         [bool]$ConstitutionCopied,
         [string[]]$Missing,
+        [string[]]$DeployedArtifacts,
+        [string[]]$PreservedArtifacts,
+        [string[]]$UndeployedArtifacts,
         [System.Collections.Generic.List[string]]$Warnings
     )
 
@@ -658,6 +728,9 @@ function New-InstallationReport {
     $workflowLines = if ($WorkflowEntries.Count -gt 0) { ($WorkflowEntries | Sort-Object | ForEach-Object { "- $_" }) -join "`n" } else { "- none detected" }
     $missingLines = if ($Missing.Count -gt 0) { ($Missing | ForEach-Object { "- $_" }) -join "`n" } else { "- none" }
     $warningLines = if ($Warnings.Count -gt 0) { ($Warnings | ForEach-Object { "- $_" }) -join "`n" } else { "- none" }
+    $deployedLines = if ($DeployedArtifacts.Count -gt 0) { ($DeployedArtifacts | Sort-Object | ForEach-Object { $p = $_ -split '\|', 3; "- $($p[0]): ``$($p[1])`` -> ``$($p[2])``" }) -join "`n" } else { "- none" }
+    $preservedLines = if ($PreservedArtifacts.Count -gt 0) { ($PreservedArtifacts | Sort-Object | ForEach-Object { "- $_" }) -join "`n" } else { "- none" }
+    $undeployedLines = if ($UndeployedArtifacts.Count -gt 0) { ($UndeployedArtifacts | Sort-Object | ForEach-Object { "- $_" }) -join "`n" } else { "- none" }
     $errorBlock = if ([string]::IsNullOrWhiteSpace($ErrorMessage)) { "- none" } else { "- $ErrorMessage" }
 
     $content = @"
@@ -678,7 +751,7 @@ $Status
 | Requested install mode | $InstallMode |
 | Effective install mode | $EffectiveMode |
 | Git | $GitVersion |
-| Spec Kit | $SpecKitVersion |
+| Spec Kit (detected) | $SpecKitVersion |
 | Spec Kit init command | $SpecKitInitCommandForReport |
 
 ## GRM Customization Source
@@ -704,6 +777,20 @@ $promptLines
 ### Workflows
 
 $workflowLines
+
+## Deployed Corporate Artifacts
+
+$deployedLines
+
+## Preserved Native Artifacts
+
+Verified intact under Spec Kit (detected): $SpecKitVersion
+
+$preservedLines
+
+## Not Deployed (present in Source of Truth, not declared)
+
+$undeployedLines
 
 ## Supporting Assets
 
@@ -748,6 +835,7 @@ $AgentFiles = @()
 $PromptFiles = @()
 $DeployedArtifacts = [System.Collections.Generic.List[string]]::new()
 $PreservedArtifacts = @()
+$UndeployedArtifacts = @()
 $WorkflowEntries = @()
 $SamplesCopied = $false
 $DocsCopied = $false
@@ -902,6 +990,9 @@ try {
         }
     }
 
+    Assert-DeployedProvenance -Deployed $DeployedArtifacts -Missing ([ref]$Missing)
+    $UndeployedArtifacts = @(Get-UndeployedMemoryFiles -SourceRepoPath $SourceRepoPath)
+
     if (Test-Path $agentsTo) {
         $AgentFiles = @(Get-ChildItem -Path $agentsTo -File | Select-Object -ExpandProperty Name)
     }
@@ -955,6 +1046,9 @@ finally {
                 -DocsCopied:$DocsCopied `
                 -ConstitutionCopied:$ConstitutionCopied `
                 -Missing $Missing `
+                -DeployedArtifacts $DeployedArtifacts `
+                -PreservedArtifacts $PreservedArtifacts `
+                -UndeployedArtifacts $UndeployedArtifacts `
                 -Warnings $Warnings
             Write-Ok "Installation report generated: $ReportPath"
         }

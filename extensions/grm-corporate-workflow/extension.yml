@@ -20,6 +20,8 @@ commands:
   - corp.plan
   - corp.doc
 
+skills: []   # Reservado. Ver GRM-SCK_Propuesta_Skills_v1.md
+
 metadata:
   release_status: Release Candidate
   last_updated: 2026-07-22

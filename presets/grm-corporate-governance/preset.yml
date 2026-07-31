@@ -19,6 +19,20 @@ overrides:
     - speckit.clarify.agent.md
     - speckit.plan.agent.md
 
+deploys:
+  memory:
+    - source: memory/constitution.md
+      target: .specify/memory/constitution.md
+  # Los ficheros de memory/ no declarados aquí son variantes de
+  # referencia y no se despliegan al runtime.
+
+native_preserved:
+  - speckit.implement
+  - speckit.tasks
+  # Agentes nativos de Spec Kit deliberadamente NO sobreescritos.
+  # El instalador debe verificar que permanecen intactos tras la
+  # instalación corporativa.
+
 metadata:
   release_status: Release Candidate
   last_updated: 2026-07-22

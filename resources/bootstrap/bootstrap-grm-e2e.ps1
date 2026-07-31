@@ -383,6 +383,69 @@ function Get-UndeployedMemoryFiles {
     return $undeployed
 }
 
+function Read-YamlScalar {
+    # Lee un valor escalar anidado un nivel: TopKey -> NestedKey.
+    # Devuelve $null si no existe. Parser minimo (Opcion A, escalares).
+    param(
+        [string]$Path,
+        [string]$TopKey,
+        [string]$NestedKey
+    )
+    if (-not (Test-Path $Path)) { return $null }
+    $inTop = $false
+    $topIndent = -1
+    foreach ($raw in (Get-Content $Path)) {
+        $line = $raw -replace '\t', '    '
+        if ($line -match '^\s*#') { continue }
+        if ([string]::IsNullOrWhiteSpace($line)) { continue }
+        $indent = ($line -replace '^(\s*).*$', '$1').Length
+        $trimmed = $line.Trim()
+
+        if (-not $inTop) {
+            if ($trimmed -match "^${TopKey}:") { $inTop = $true; $topIndent = $indent }
+            continue
+        }
+        if ($indent -le $topIndent) { break }
+        if ($trimmed -match "^${NestedKey}:\s*(.+)$") {
+            $val = $Matches[1].Trim()
+            $val = ($val -replace '\s+#.*$', '').Trim()
+            $val = $val.Trim('"').Trim("'")
+            return $val
+        }
+    }
+    return $null
+}
+
+function Assert-SpecKitInstallation {
+    # P5 accion 3: verifica que el destino tiene una instalacion de
+    # Spec Kit valida (marcada por .specify). Sustituye la precondicion
+    # acoplada al runtime heredado (.specify + .github). Cumple H-INST-05.
+    param([string]$TargetPath)
+    $specifyDir = Join-Path $TargetPath ".specify"
+    if (-not (Test-Path $specifyDir)) {
+        throw "UpdateExisting requires a valid Spec Kit installation in the target. Missing: $specifyDir. Run 'specify init' first."
+    }
+}
+
+function Write-SpecKitVersionAdvisory {
+    # P5 accion 4: advierte (sin bloquear) si la version de Spec Kit
+    # detectada difiere de la validada por GRM. La version validada se
+    # declara en extension.yml:compatibility.spec-kit-validated. Si el
+    # campo no existe (PA-01 sin decidir), no advierte. Cumple R-02.
+    param(
+        [string]$SourceRepoPath,
+        [string]$DetectedVersion,
+        [System.Collections.Generic.List[string]]$Warnings
+    )
+    $extYml = Join-Path $SourceRepoPath "extensions/grm-corporate-workflow/extension.yml"
+    $validated = Read-YamlScalar -Path $extYml -TopKey "compatibility" -NestedKey "spec-kit-validated"
+    if ([string]::IsNullOrWhiteSpace($validated)) { return }   # PA-01 sin decidir: no se advierte
+    if ($validated -eq "current") { return }
+    if ($DetectedVersion -notlike "*$validated*") {
+        $Warnings.Add("Spec Kit version mismatch: detected '$DetectedVersion', GRM validated '$validated'. Installation proceeds; verify compatibility.") | Out-Null
+    }
+}
+
 function Invoke-GitChecked {
     param([string[]]$Arguments, [string]$ErrorMessage)
     & git @Arguments
@@ -415,12 +478,7 @@ function Resolve-TargetWorkspacePolicy {
     }
 
     if ($targetExists -and $InstallMode -eq "UpdateExisting") {
-        if (-not (Test-Path (Join-Path $TargetPath ".specify"))) {
-            throw "UpdateExisting requires an existing Spec Kit runtime directory: $TargetPath\.specify"
-        }
-        if (-not (Test-Path (Join-Path $TargetPath ".github"))) {
-            throw "UpdateExisting requires an existing Copilot runtime directory: $TargetPath\.github"
-        }
+        Assert-SpecKitInstallation -TargetPath $TargetPath
         return "UpdateExisting"
     }
 
@@ -922,6 +980,7 @@ try {
     }
     else {
         Write-Step "Update existing workspace"
+        Write-SpecKitVersionAdvisory -SourceRepoPath $SourceRepoPath -DetectedVersion $SpecKitVersion -Warnings $Warnings
         Write-Ok "Existing runtime preserved. Spec Kit init was not executed."
     }
 

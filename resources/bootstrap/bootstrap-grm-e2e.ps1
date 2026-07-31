@@ -139,6 +139,122 @@ function Copy-FileIfExists {
     return $true
 }
 
+function Read-YamlStringList {
+    # Lee una lista YAML de strings bajo una clave dada.
+    # Soporta clave de nivel superior (ej. 'commands:') o anidada un
+    # nivel (ej. 'overrides:' -> 'agents:'). Parser minimo suficiente
+    # para los manifiestos GRM (listas planas de strings). Ver
+    # GRM-SCK_Plan_Adaptacion_Instalador_v1 (Opcion A).
+    param(
+        [string]$Path,
+        [string]$TopKey,
+        [string]$NestedKey = $null
+    )
+
+    if (-not (Test-Path $Path)) { return @() }
+    $lines = Get-Content -Path $Path
+    $result = [System.Collections.Generic.List[string]]::new()
+
+    $inTop = $false
+    $inNested = $false
+    $topIndent = -1
+
+    foreach ($raw in $lines) {
+        $line = $raw -replace '\t', '    '
+        if ($line -match '^\s*#') { continue }
+        if ([string]::IsNullOrWhiteSpace($line)) { continue }
+
+        $indent = ($line -replace '^(\s*).*$', '$1').Length
+        $trimmed = $line.Trim()
+
+        if (-not $inTop) {
+            if ($trimmed -match "^${TopKey}:") {
+                $inTop = $true
+                $topIndent = $indent
+                if (-not $NestedKey) { $inNested = $true }
+            }
+            continue
+        }
+
+        if ($indent -le $topIndent -and $trimmed -notmatch '^-') {
+            break
+        }
+
+        if ($NestedKey -and -not $inNested) {
+            if ($trimmed -match "^${NestedKey}:") { $inNested = $true }
+            continue
+        }
+
+        if ($trimmed -match '^-\s*(.+)$') {
+            $item = $Matches[1].Trim()
+            $item = ($item -replace '\s+#.*$', '').Trim()
+            $item = $item.Trim('"').Trim("'")
+            if ($item) { $result.Add($item) }
+        }
+    }
+
+    return $result.ToArray()
+}
+
+function Copy-ManifestFile {
+    # Copia un unico fichero declarado en el manifiesto. Si el origen
+    # no existe, la instalacion FALLA (no se degrada). Cumple CA-04.
+    param(
+        [string]$From,
+        [string]$To,
+        [string]$Label,
+        [System.Collections.Generic.List[string]]$Deployed
+    )
+
+    if (-not (Test-Path $From)) {
+        throw "Declared artifact not found in Source of Truth: $From ($Label)"
+    }
+
+    $destinationDirectory = Split-Path -Path $To -Parent
+    if (-not (Test-Path $destinationDirectory)) {
+        New-Item -ItemType Directory -Path $destinationDirectory -Force | Out-Null
+    }
+
+    Copy-Item -Path $From -Destination $To -Force
+    if ($Deployed) { $Deployed.Add("$Label|$From|$To") | Out-Null }
+    Write-Ok "Deployed $Label"
+    return $true
+}
+
+function Install-CorporateAgentsAndPrompts {
+    # Despliega agentes y prompts corporativos por manifiesto, fichero
+    # a fichero. Sustituye la copia por directorio completo (H-INST-01,
+    # H-INST-02). Cumple PC-01 y PC-02.
+    param(
+        [string]$SourceRepoPath,
+        [string]$TargetPath,
+        [System.Collections.Generic.List[string]]$Deployed
+    )
+
+    $extYml = Join-Path $SourceRepoPath "extensions/grm-corporate-workflow/extension.yml"
+    $preYml = Join-Path $SourceRepoPath "presets/grm-corporate-governance/preset.yml"
+
+    # 1. Comandos corporativos: agent + prompt por cada corp.<cmd>
+    $commands = Read-YamlStringList -Path $extYml -TopKey "commands"
+    foreach ($cmd in $commands) {
+        $agentFrom = Join-Path $SourceRepoPath "extensions/grm-corporate-workflow/agents/$cmd.agent.md"
+        $agentTo = Join-Path $TargetPath ".github/agents/$cmd.agent.md"
+        Copy-ManifestFile -From $agentFrom -To $agentTo -Label "corp agent: $cmd" -Deployed $Deployed | Out-Null
+
+        $promptFrom = Join-Path $SourceRepoPath "extensions/grm-corporate-workflow/prompts/$cmd.prompt.md"
+        $promptTo = Join-Path $TargetPath ".github/prompts/$cmd.prompt.md"
+        Copy-ManifestFile -From $promptFrom -To $promptTo -Label "corp prompt: $cmd" -Deployed $Deployed | Out-Null
+    }
+
+    # 2. Overrides de preset: solo agentes (el preset no declara prompts)
+    $overrides = Read-YamlStringList -Path $preYml -TopKey "overrides" -NestedKey "agents"
+    foreach ($agent in $overrides) {
+        $ovrFrom = Join-Path $SourceRepoPath "presets/grm-corporate-governance/agents/$agent"
+        $ovrTo = Join-Path $TargetPath ".github/agents/$agent"
+        Copy-ManifestFile -From $ovrFrom -To $ovrTo -Label "preset override agent: $agent" -Deployed $Deployed | Out-Null
+    }
+}
+
 function Invoke-GitChecked {
     param([string[]]$Arguments, [string]$ErrorMessage)
     & git @Arguments
@@ -569,6 +685,7 @@ $Warnings = [System.Collections.Generic.List[string]]::new()
 $Missing = @()
 $AgentFiles = @()
 $PromptFiles = @()
+$DeployedArtifacts = [System.Collections.Generic.List[string]]::new()
 $WorkflowEntries = @()
 $SamplesCopied = $false
 $DocsCopied = $false
@@ -667,14 +784,10 @@ try {
     $presetTo = Join-Path $TargetPath "presets/grm-corporate-governance"
     Copy-DirectoryMerge -From $presetFrom -To $presetTo -Label "GRM corporate governance preset" -Warnings $Warnings | Out-Null
 
-    Write-Step "Apply Copilot runtime files"
-    $agentsFrom = Join-Path $SourceRepoPath ".github/agents"
+    Write-Step "Deploy corporate agents and prompts (manifest-driven)"
     $agentsTo = Join-Path $TargetPath ".github/agents"
-    Copy-DirectoryMerge -From $agentsFrom -To $agentsTo -Label "GRM runtime agents" -Warnings $Warnings | Out-Null
-
-    $promptsFrom = Join-Path $SourceRepoPath ".github/prompts"
     $promptsTo = Join-Path $TargetPath ".github/prompts"
-    Copy-DirectoryMerge -From $promptsFrom -To $promptsTo -Label "GRM runtime prompts" -Warnings $Warnings | Out-Null
+    Install-CorporateAgentsAndPrompts -SourceRepoPath $SourceRepoPath -TargetPath $TargetPath -Deployed $DeployedArtifacts
 
     Write-Step "Install GRM workflows"
     $WorkflowEntries = @(Install-GrmWorkflows -SourceRepoPath $SourceRepoPath -TargetPath $TargetPath -Warnings $Warnings)

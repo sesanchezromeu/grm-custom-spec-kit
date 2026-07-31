@@ -255,6 +255,67 @@ function Install-CorporateAgentsAndPrompts {
     }
 }
 
+function Get-NativePreservedFiles {
+    # Resuelve las rutas de fichero (agent + prompt) para cada clave
+    # declarada en native_preserved. Opcion A: agent + prompt.
+    param(
+        [string]$SourceRepoPath,
+        [string]$TargetPath
+    )
+    $preYml = Join-Path $SourceRepoPath "presets/grm-corporate-governance/preset.yml"
+    $keys = Read-YamlStringList -Path $preYml -TopKey "native_preserved"
+    $files = [System.Collections.Generic.List[string]]::new()
+    foreach ($key in $keys) {
+        $files.Add((Join-Path $TargetPath ".github/agents/$key.agent.md"))
+        $files.Add((Join-Path $TargetPath ".github/prompts/$key.prompt.md"))
+    }
+    return $files
+}
+
+function Get-FileHashSnapshot {
+    # Captura hash SHA256 de una lista de ficheros. Los ausentes se
+    # registran como $null (no se fallan: un nativo ausente no es un
+    # nativo corrompido).
+    param([System.Collections.Generic.List[string]]$Files)
+    $snapshot = @{}
+    foreach ($f in $Files) {
+        if (Test-Path $f) {
+            $snapshot[$f] = (Get-FileHash -Path $f -Algorithm SHA256).Hash
+        } else {
+            $snapshot[$f] = $null
+        }
+    }
+    return $snapshot
+}
+
+function Assert-NativePreservedIntact {
+    # Compara snapshot antes/despues. Falla si un nativo que existia
+    # antes fue modificado o eliminado durante el despliegue corporativo.
+    # Cumple PC-03. Devuelve la lista de ficheros verificados intactos.
+    param(
+        [hashtable]$Before,
+        [hashtable]$After
+    )
+    $verified = [System.Collections.Generic.List[string]]::new()
+    foreach ($file in $Before.Keys) {
+        $hashBefore = $Before[$file]
+        $hashAfter  = $After[$file]
+
+        if ($null -eq $hashBefore) {
+            # No existia antes: fuera de alcance de proteccion (tolerancia de version)
+            continue
+        }
+        if ($null -eq $hashAfter) {
+            throw "Native preserved artifact was deleted during corporate deployment: $file"
+        }
+        if ($hashBefore -ne $hashAfter) {
+            throw "Native preserved artifact was modified during corporate deployment: $file"
+        }
+        $verified.Add($file) | Out-Null
+    }
+    return $verified
+}
+
 function Invoke-GitChecked {
     param([string[]]$Arguments, [string]$ErrorMessage)
     & git @Arguments
@@ -686,6 +747,7 @@ $Missing = @()
 $AgentFiles = @()
 $PromptFiles = @()
 $DeployedArtifacts = [System.Collections.Generic.List[string]]::new()
+$PreservedArtifacts = @()
 $WorkflowEntries = @()
 $SamplesCopied = $false
 $DocsCopied = $false
@@ -784,10 +846,19 @@ try {
     $presetTo = Join-Path $TargetPath "presets/grm-corporate-governance"
     Copy-DirectoryMerge -From $presetFrom -To $presetTo -Label "GRM corporate governance preset" -Warnings $Warnings | Out-Null
 
+    Write-Step "Capture native preserved snapshot"
+    $NativePreservedFiles = Get-NativePreservedFiles -SourceRepoPath $SourceRepoPath -TargetPath $TargetPath
+    $NativeHashBefore = Get-FileHashSnapshot -Files $NativePreservedFiles
+
     Write-Step "Deploy corporate agents and prompts (manifest-driven)"
     $agentsTo = Join-Path $TargetPath ".github/agents"
     $promptsTo = Join-Path $TargetPath ".github/prompts"
     Install-CorporateAgentsAndPrompts -SourceRepoPath $SourceRepoPath -TargetPath $TargetPath -Deployed $DeployedArtifacts
+
+    Write-Step "Verify native preserved artifacts are intact"
+    $NativeHashAfter = Get-FileHashSnapshot -Files $NativePreservedFiles
+    $PreservedArtifacts = @(Assert-NativePreservedIntact -Before $NativeHashBefore -After $NativeHashAfter)
+    Write-Ok "Native preserved artifacts verified intact: $($PreservedArtifacts.Count) file(s)"
 
     Write-Step "Install GRM workflows"
     $WorkflowEntries = @(Install-GrmWorkflows -SourceRepoPath $SourceRepoPath -TargetPath $TargetPath -Warnings $Warnings)

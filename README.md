@@ -184,16 +184,18 @@ Manual installation remains the reference model.
 ## Repository Structure
 
 ```text
-.github/
-.specify/
-docs/
-extensions/
-presets/
+.github/          Runtime — corporate agents/prompts only (corp.* + declared overrides)
+.specify/         Runtime — corporate workflow (grm) + constitution variants only
+docs/             Documentation
+extensions/       Source of Truth — corporate command definitions
+presets/          Source of Truth — governance overrides and guardrails
 resources/
-└── bootstrap/
-samples/
+└── bootstrap/    Installer
+samples/          Demonstration artifacts
 README.md
 ```
+
+Native Spec Kit artifacts (scripts, templates, native agents/prompts, installation state) are **not** versioned in this repository. They are provided by `specify init` on the target during installation. The repository stores only artifacts with a declared origin in the Source of Truth.
 
 ## Documentation Map
 

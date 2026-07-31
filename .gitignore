@@ -219,3 +219,31 @@ __marimo__/
 
 # resumen de sesiones de preparacion de la personalización
 docs/sessions/
+
+# ------------------------------------------------------------------
+# GRM Custom Spec Kit — runtime nativo heredado
+# Impide que un 'specify init' local reintroduzca artefactos nativos
+# de Spec Kit en el repositorio. Solo los artefactos corporativos
+# (corp.*, overrides declarados en preset.yml, grm/workflow.yml)
+# deben versionarse. Ver GRM-SCK_Plan_Adaptacion_Instalador_v1 (P6).
+# ------------------------------------------------------------------
+
+# Estado de instalación de Spec Kit
+.specify/init-options.json
+.specify/integration.json
+.specify/integrations/
+
+# Scripts y templates nativos
+.specify/scripts/
+.specify/templates/
+
+# Workflow nativo y registry derivado (el SoT vive en presets/)
+.specify/workflows/speckit/
+.specify/workflows/workflow-registry.json
+
+# Agentes y prompts nativos de Spec Kit
+.github/agents/speckit.implement.agent.md
+.github/agents/speckit.tasks.agent.md
+.github/prompts/speckit.implement.prompt.md
+.github/prompts/speckit.plan.prompt.md
+.github/prompts/speckit.tasks.prompt.md

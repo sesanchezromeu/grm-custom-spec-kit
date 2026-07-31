@@ -249,8 +249,8 @@ The guard enables safe reuse of native Spec Kit planning while protecting govern
 # 6. Repository Architecture
 
 ```text
-.github/        Runtime
-.specify/       Runtime
+.github/        Runtime (corporate artifacts only)
+.specify/       Runtime (corporate artifacts only)
 .vscode/        Local tooling
 
 docs/           Documentation
@@ -261,13 +261,15 @@ samples/        Demonstration artifacts
 
 ## Runtime Layer
 
+The repository's `.github/` and `.specify/` directories contain **only corporate artifacts** with a declared origin in the Source of Truth (`extensions/`, `presets/`). Native Spec Kit artifacts are **not** stored in the repository: they are provided by `specify init` on the target machine during installation. This eliminates the inherited-runtime fossilization previously present (see GRM-SCK_Plan_Adaptacion_Instalador_v1, P6).
+
 ### .github
 
-Contains the GitHub Copilot runtime used during execution.
+Contains only the corporate agents and prompts (`corp.*`) and the preset overrides declared in `preset.yml`. Native agents and prompts are installed by `specify init` on the target and are never versioned here.
 
 ### .specify
 
-Contains Spec Kit runtime assets and generated execution state.
+Contains only the corporate workflow (`workflows/grm/`) and the constitution variants under `memory/`. Native Spec Kit runtime (scripts, templates, installation state, native workflow, derived registry) is generated at install time and is not versioned here.
 
 ---
 

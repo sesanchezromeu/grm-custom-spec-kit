@@ -1,0 +1,24 @@
+# Backlog catalogue — template.
+#
+# Copy this file to .specify/grm-backlog.yml in the consuming project and fill
+# in one entry per backlog. Keys are chosen by the project and used in the
+# <KEY>:<id> form of a backlog reference.
+#
+# The credential is never stored here. It is read from the AZDO_PAT environment
+# variable. Any token written into this file must be considered compromised.
+#
+# There is no default backlog by design: a reference that does not name its
+# backlog can resolve silently against the wrong one.
+
+provider: azure-devops
+
+backlogs:
+  <KEY>:
+    organization_url: https://dev.azure.com/<organization>
+    project: <project>
+
+  # Second backlog, if the project consumes more than one:
+  #
+  # <ANOTHER_KEY>:
+  #   organization_url: https://dev.azure.com/<organization>
+  #   project: <another-project>

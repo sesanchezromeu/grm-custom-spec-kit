@@ -111,7 +111,9 @@ When invoked, you MUST execute these steps in order:
   - Verify that the active context reset completed successfully.
 - Load the source skill corresponding to the provided flag.
 - Obtain the normalized PBI payload from the skill.
-- Create or overwrite .specify/memory/active-pbi.md with the loaded PBI content.
+- Write .specify/memory/active-pbi.md:
+  - Source `--file`: create or overwrite it with the loaded PBI content, following the Full PBI preservation rule, the Canonical section rule and the Required active PBI format below.
+  - Source `--backlog`: you do not write it. The source skill assembles it mechanically from the retrieved fragments and verifies the result. Follow the skill's procedure and report what it returns.
 - Re-read .specify/memory/active-pbi.md.
 - Verify that the ## Source section contains the exact input reference provided by the user.
 - Verify that the loaded title or PBI ID corresponds to the source.
@@ -125,6 +127,10 @@ PBI load failed: the source skill could not be loaded. Do not continue with /cor
 
 If .specify/memory/active-pbi.md is not updated after loading, STOP and report:
 PBI load failed: active-pbi.md was not updated. Do not continue with /corp.assess, /corp.plan or /speckit.plan.
+
+If the source skill returns a verification failure, STOP and report:
+PBI load failed: the active PBI does not reproduce the source. Do not continue with /corp.assess, /corp.plan or /speckit.plan.
+Report the difference the verifier printed, verbatim. Do not attempt to correct the file yourself.
 
 ### Read behavior
 
@@ -166,7 +172,8 @@ Allowed write locations:
 
 Allowed operations:
 - create .specify/memory/ if needed,
-- create or overwrite .specify/memory/active-pbi.md,
+- create or overwrite .specify/memory/active-pbi.md, directly when the source is `--file`, or through the source skill's assembly script when the source is `--backlog`,
+- create or overwrite .specify/memory/.grm-pbi-payload.json and .specify/memory/.grm-pbi-sections/ through the source skill's scripts,
 - ensure features/ exists,
 - preserve existing historical contents under features/,
 - delete .specify/feature.json if it exists.
@@ -215,6 +222,9 @@ If the file cannot be written, report the failure and do not say that the PBI wa
 ### Full PBI preservation rule
 
 /corp.load must preserve the source PBI content without functional loss.
+
+This rule, the Canonical section rule and the Required active PBI format below tell **you** how to write the file. They apply when you write it, which is the `--file` source. With `--backlog` the file is assembled by a script from verified fragments and checked against them afterwards; the same guarantees hold, enforced mechanically rather than by instruction. Do not write or edit the file yourself on that path.
+
 The generated .specify/memory/active-pbi.md must include:
 - A metadata header with the source envelope.
 - The full original PBI content copied verbatim under the heading:
@@ -419,6 +429,7 @@ The command is complete when:
 - the PBI has been retrieved through the dispatched source skill,
 - the active execution context has been reset without deleting historical feature delivery artifacts,
 - .specify/memory/active-pbi.md has been created or updated,
+- with the `--backlog` source, the assembled active PBI has passed the skill's verification,
 - the user receives a clear loading summary,
 - the user is instructed to run /corp.assess,
 - no functional specification has been generated.

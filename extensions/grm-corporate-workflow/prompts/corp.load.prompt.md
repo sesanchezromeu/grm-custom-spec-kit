@@ -36,3 +36,12 @@ After the pre-load context reset:
 - .specify/feature.json is absent.
 
 If the active context reset fails, the PBI must not be loaded.
+
+## Ordering with respect to the source
+
+This reset belongs to the invariant core of /corp.load and runs before the source is
+resolved. Do not load a source skill, and do not retrieve any PBI content, until the
+reset has completed and been verified. Retrieving first and resetting afterwards would
+write the new PBI over a context that was never cleaned.
+
+The reset is identical for every source. It does not depend on which flag was provided.

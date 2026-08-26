@@ -19,6 +19,21 @@
 
     No regular expressions are used to interpret the markup. Nesting depth
     carries business meaning and a regex approach does not preserve it.
+
+    F-08 verification (P16c, D-P16c-01). The rule is not relaxed, it is measured
+    correctly. Until P16c the two sides were measured with different criteria:
+    the source side recorded a depth per li visited in the DOM, and the payload
+    side ran a regular expression over the final Markdown that counted every
+    line shaped like a list item. A work item written by pasting plain text with
+    leading dashes has no list in its DOM and many list-shaped lines in its
+    text, so the comparison rejected a conversion that had lost nothing.
+
+    The converter now records, at the moment it writes them, the literal line
+    and the depth of every list item it emits. Verification asserts that those
+    lines are still present in the final Markdown, in order, with an indentation
+    that encodes their depth. Any remaining list-shaped line did not come from a
+    list in the source: it is ignored for the verdict and reported as a warning,
+    because it is source text, not lost structure.
 #>
 
 [CmdletBinding()]
@@ -114,10 +129,12 @@ function Test-HasBlockChild {
 
 function New-ConversionState {
     return @{
-        Lines        = [System.Collections.Generic.List[string]]::new()
-        SourceDepths = [System.Collections.Generic.List[int]]::new()
-        Warnings     = [System.Collections.Generic.List[string]]::new()
-        Failure      = $null
+        Lines     = [System.Collections.Generic.List[string]]::new()
+        # F-08: one entry per list item actually written, recorded where it is
+        # written. Depth comes from the DOM walk, Line is the emitted text.
+        ListItems = [System.Collections.Generic.List[object]]::new()
+        Warnings  = [System.Collections.Generic.List[string]]::new()
+        Failure   = $null
     }
 }
 
@@ -228,12 +245,20 @@ function Get-InlineMarkdown {
 # ---------------------------------------------------------------------------
 
 function Add-ListItemText {
-    param($State, [string]$Text, [string]$Indent, [string]$Marker)
+    param($State, [string]$Text, [string]$Indent, [string]$Marker, [int]$Depth)
 
     $parts = @($Text -split "`n" | ForEach-Object { $_.Trim() } | Where-Object { $_ -ne '' })
     if ($parts.Count -eq 0) { return }
 
-    Add-Line $State ($Indent + $Marker + $parts[0])
+    # D-P16c-03: the item is recorded here, at the single point where the
+    # converter writes a bullet, and only when a line is actually produced.
+    # Recording in the callers left two ways to disagree with reality: an empty
+    # li recorded a depth and wrote nothing, and loose text inside a list wrote
+    # a bullet and recorded nothing. Both failed F-08 for no reason.
+    $line = $Indent + $Marker + $parts[0]
+    $State.ListItems.Add(@{ Depth = $Depth; Line = $line }) | Out-Null
+
+    Add-Line $State $line
     for ($i = 1; $i -lt $parts.Count; $i++) {
         # Continuation of the same item, aligned under its text.
         Add-Line $State ($Indent + '  ' + $parts[$i])
@@ -251,7 +276,7 @@ function Convert-ListNode {
         if ($child.nodeType -eq 3) {
             if (([string]$child.nodeValue).Trim()) {
                 $State.Warnings.Add("Loose text inside a list was preserved as an item.") | Out-Null
-                Add-ListItemText $State ([string]$child.nodeValue) $indent '- '
+                Add-ListItemText $State ([string]$child.nodeValue) $indent '- ' $Depth
             }
             continue
         }
@@ -269,12 +294,11 @@ function Convert-ListNode {
             continue
         }
 
-        # F-08: depth recorded from the DOM, not from the generated Markdown.
-        $State.SourceDepths.Add($Depth) | Out-Null
-
+        # F-08: depth comes from the DOM walk, never from the generated
+        # Markdown. Add-ListItemText records it together with the line it writes.
         $marker = if ($ordered) { "$index. " } else { '- ' }
         $text   = Get-InlineMarkdown -Node $child -State $State -SkipLists
-        Add-ListItemText $State $text $indent $marker
+        Add-ListItemText $State $text $indent $marker $Depth
         $index++
 
         foreach ($sub in (Get-ChildNodeList $child)) {
@@ -395,8 +419,7 @@ function Convert-BlockNode {
 
             '^LI$' {
                 $State.Warnings.Add("A list item was found outside any list and was kept at the top level.") | Out-Null
-                $State.SourceDepths.Add(0) | Out-Null
-                Add-ListItemText $State (Get-InlineMarkdown -Node $child -State $State -SkipLists) '' '- '
+                Add-ListItemText $State (Get-InlineMarkdown -Node $child -State $State -SkipLists) '' '- ' 0
             }
 
             '^(TR|TD|TH|THEAD|TBODY|TFOOT)$' {
@@ -425,19 +448,80 @@ function Convert-BlockNode {
 }
 
 # ---------------------------------------------------------------------------
-# Depth profile of the generated Markdown
+# F-08 structure verification
 # ---------------------------------------------------------------------------
 
-function Get-MarkdownDepthProfile {
-    param([string]$Markdown)
-    $depths = [System.Collections.Generic.List[int]]::new()
-    if ([string]::IsNullOrWhiteSpace($Markdown)) { return @() }
-    foreach ($line in ($Markdown -split "`r?`n")) {
-        if ($line -match '^(\s*)([-*+]|\d+\.)\s+\S') {
-            $depths.Add([int]([math]::Floor($Matches[1].Length / 2))) | Out-Null
-        }
+# Depth encoded by the indentation of a line shaped like a list item, or -1
+# when the line has no such shape. This recognizes a shape; it does not decide
+# that the line came from a list.
+function Get-ListLineDepth {
+    param([string]$Line)
+    if ($null -eq $Line) { return -1 }
+    if ($Line -match '^(\s*)([-*+]|\d+\.)\s+\S') {
+        return [int]([math]::Floor($Matches[1].Length / 2))
     }
-    return @($depths.ToArray())
+    return -1
+}
+
+# Assert that every list item the converter wrote survives in the final
+# Markdown, in order, with an indentation that encodes its depth. Surplus
+# list-shaped lines are source text, not structure: they are returned to the
+# caller for a warning and never affect the verdict.
+function Test-ListStructure {
+    param([string]$Markdown, $Items)
+
+    $result = @{
+        passed         = $false
+        detail         = ''
+        matched_depths = @()
+        extra_lines    = @()
+    }
+
+    $lines = @()
+    if (-not [string]::IsNullOrEmpty($Markdown)) { $lines = @($Markdown -split "`r?`n") }
+
+    $expected = @($Items)
+    $matched  = [System.Collections.Generic.List[int]]::new()
+    $taken    = @{}
+    $cursor   = 0
+
+    for ($n = 0; $n -lt $expected.Count; $n++) {
+
+        $item = $expected[$n]
+
+        # F-08 invariant, checked on the line the converter itself wrote: two
+        # spaces per level. A generator bug must not be reported as a source
+        # problem.
+        $written = Get-ListLineDepth ([string]$item.Line)
+        if ($written -ne [int]$item.Depth) {
+            $result.detail = ("list item {0} was written with an indentation that does not encode its depth {1}: '{2}'" -f $n, [int]$item.Depth, [string]$item.Line)
+            return $result
+        }
+
+        $found = -1
+        for ($i = $cursor; $i -lt $lines.Count; $i++) {
+            if ($lines[$i] -ceq [string]$item.Line) { $found = $i; break }
+        }
+        if ($found -lt 0) {
+            $result.detail = ("list item {0} at depth {1} is missing from the payload: '{2}'" -f $n, [int]$item.Depth, [string]$item.Line)
+            return $result
+        }
+
+        $taken[$found] = $true
+        $matched.Add([int]$item.Depth) | Out-Null
+        $cursor = $found + 1
+    }
+
+    $extra = [System.Collections.Generic.List[string]]::new()
+    for ($i = 0; $i -lt $lines.Count; $i++) {
+        if ($taken.ContainsKey($i)) { continue }
+        if ((Get-ListLineDepth $lines[$i]) -ge 0) { $extra.Add($lines[$i]) | Out-Null }
+    }
+
+    $result.matched_depths = @($matched.ToArray())
+    $result.extra_lines    = @($extra.ToArray())
+    $result.passed         = $true
+    return $result
 }
 
 # ---------------------------------------------------------------------------
@@ -514,6 +598,32 @@ function ConvertTo-MarkdownFromHtml {
     $markdown = ($clean -join "`n")
     $result.markdown = $markdown
 
+    # --- F-08: structure ---------------------------------------------------
+    # Evaluated first so that its warning is reported even when F-07 fails.
+    $sourceDepths = [System.Collections.Generic.List[int]]::new()
+    foreach ($item in $state.ListItems) { $sourceDepths.Add([int]$item.Depth) | Out-Null }
+    $result.source_depths = @($sourceDepths.ToArray())
+
+    $structure = Test-ListStructure -Markdown $markdown -Items $state.ListItems
+    $result.payload_depths = @($structure.matched_depths)
+
+    if ($structure.extra_lines.Count -gt 0) {
+        $sample = [string]$structure.extra_lines[0]
+        if ($sample.Length -gt 60) { $sample = $sample.Substring(0, 60) + '...' }
+        $note = ''
+        if ($state.ListItems.Count -eq 0) {
+            # OBS-P16c-01. Zero recorded items reads as ambiguous between "the
+            # source had no list" and "every list was lost". Only the first can
+            # occur, and saying so is the difference between a structure that
+            # was verified and one that never existed: a hierarchy flattened
+            # before the HTML was stored is invisible to F-08 by construction.
+            $note = ' The source contains no list at all, so no nesting was verified. Any hierarchy this text once had was flattened before the HTML was stored and cannot be detected or recovered here.'
+        }
+        $state.Warnings.Add(("F-08: {0} line(s) in the payload look like list items but do not come from a list in the source. The source writes them as plain text; they were copied verbatim and are not part of the structure check. First one: '{1}'.{2}" -f $structure.extra_lines.Count, $sample, $note)) | Out-Null
+    }
+
+    $result.warnings = @($state.Warnings.ToArray())
+
     # --- F-07: textual completeness ---------------------------------------
     $sourceText = ''
     try { $sourceText = [string]$body.innerText } catch { }
@@ -522,10 +632,6 @@ function ConvertTo-MarkdownFromHtml {
 
     $result.source_tokens  = $sourceTokens.Count
     $result.payload_tokens = $payloadTokens.Count
-
-    # --- F-08: structure ---------------------------------------------------
-    $result.source_depths  = @($state.SourceDepths.ToArray())
-    $result.payload_depths = Get-MarkdownDepthProfile $markdown
 
     if ($sourceTokens.Count -ne $payloadTokens.Count) {
         $result.detail = ("token count differs, {0} in the source and {1} in the payload" -f $sourceTokens.Count, $payloadTokens.Count)
@@ -538,15 +644,9 @@ function ConvertTo-MarkdownFromHtml {
         }
     }
 
-    if ($result.source_depths.Count -ne $result.payload_depths.Count) {
-        $result.detail = ("list item count differs, {0} in the source and {1} in the payload" -f $result.source_depths.Count, $result.payload_depths.Count)
+    if (-not $structure.passed) {
+        $result.detail = $structure.detail
         return $result
-    }
-    for ($i = 0; $i -lt $result.source_depths.Count; $i++) {
-        if ($result.source_depths[$i] -ne $result.payload_depths[$i]) {
-            $result.detail = ("nesting depth of list item {0} differs, source {1} and payload {2}" -f $i, $result.source_depths[$i], $result.payload_depths[$i])
-            return $result
-        }
     }
 
     $result.passed = $true

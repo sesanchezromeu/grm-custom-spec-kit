@@ -107,8 +107,17 @@ another project.
 2. From the generated Markdown: strip list markers and indentation → sequence `M`
 3. Assert `S == M`. Any difference → load failure
 
-Structure preservation is verified separately, by comparing the depth profile of
-the source tree against the depth profile of the generated Markdown.
+Structure preservation (F-08) is verified separately, and both sides are measured
+with the same criterion. The converter records, at the moment it writes them, the
+literal line and the depth of every list item it emits. Verification asserts that
+those lines are still present in the generated Markdown, in order, with an
+indentation that encodes their depth.
+
+A list-shaped line with no recorded item behind it did not come from a list in the
+source: it is source text written with a leading dash or number. It is copied
+verbatim, ignored for the verdict, and reported as a warning. Counting it as lost
+structure rejects work items that have lost nothing, because a PBI written by
+pasting plain text has no list in its DOM and many list-shaped lines in its text.
 
 Both verifications are performed by the script and their counts are returned in
 the payload. A verification asserted in prose by the agent is not a verification:

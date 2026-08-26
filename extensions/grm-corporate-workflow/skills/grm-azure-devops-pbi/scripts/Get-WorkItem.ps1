@@ -131,6 +131,21 @@ function Write-Sections {
 function Stop-WithError {
     param([string]$Message)
 
+    # OBS-P16b-01. Fragments from an earlier load survive a failed one and are
+    # indistinguishable from fresh ones: Build-ActivePbi.ps1 would assemble the
+    # previous PBI from them and Assert-ActivePbi.ps1 would confirm it, because
+    # the file does match the fragments. A wrong PBI, coherent with itself and
+    # verified. Discard them before reporting. Cmdlets only: .NET path methods
+    # resolve against the process directory, not the session one (HZ-06).
+    try {
+        if (Test-Path -LiteralPath $SectionsPath) {
+            Remove-Item -LiteralPath $SectionsPath -Recurse -Force
+        }
+    }
+    catch {
+        [Console]::Error.WriteLine("Stale section fragments could not be removed from '$SectionsPath': $_")
+    }
+
     $payload = @{
         schema  = $SCHEMA
         status  = 'error'

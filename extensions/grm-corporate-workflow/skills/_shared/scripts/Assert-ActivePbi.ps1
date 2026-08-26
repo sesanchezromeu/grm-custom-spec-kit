@@ -33,20 +33,31 @@ $ErrorActionPreference = "Stop"
 # Heading in active-pbi.md -> fragment written by Get-WorkItem.ps1.
 # '## Governance Notes' is deliberately absent: that block belongs to the
 # calling command and has no counterpart in the source work item.
+#
+# 'Notes' carries two fragments (D-P16b-02): the notes body and, for a
+# Markdown source, the sections the router could not map, appended after it
+# with their original headings. They are compared together because the file
+# has no known heading between them to split on.
+#
+# Optional fragments exist on one source and not the other. A fragment that is
+# absent along with its section is skipped; either one alone is a failure.
 $MAP = [ordered]@{
-    'Source'                          = 'source.md'
-    'Original PBI Content (Verbatim)' = 'verbatim.md'
-    'PBI ID'                          = 'pbi_id.md'
-    'Title'                           = 'title.md'
-    'Description'                     = 'description.md'
-    'Business Context'                = 'business_context.md'
-    'Acceptance Criteria'             = 'acceptance_criteria.md'
-    'Constraints'                     = 'constraints.md'
-    'Dependencies'                    = 'dependencies.md'
-    'Out of Scope'                    = 'out_of_scope.md'
-    'Notes'                           = 'notes.md'
-    'Source work item state'          = 'source_work_item_state.md'
+    'Source'                          = @{ files = @('source.md') }
+    'Original PBI Content (Verbatim)' = @{ files = @('verbatim.md') }
+    'PBI ID'                          = @{ files = @('pbi_id.md') }
+    'Title'                           = @{ files = @('title.md') }
+    'Description'                     = @{ files = @('description.md') }
+    'Business Context'                = @{ files = @('business_context.md') }
+    'Acceptance Criteria'             = @{ files = @('acceptance_criteria.md') }
+    'Constraints'                     = @{ files = @('constraints.md') }
+    'Dependencies'                    = @{ files = @('dependencies.md') }
+    'Out of Scope'                    = @{ files = @('out_of_scope.md') }
+    'Notes'                           = @{ files = @('notes.md', 'extra_sections.md') }
+    'Source work item state'          = @{ files = @('source_work_item_state.md'); optional = $true }
 }
+
+# Fragments that legitimately exist on one source only.
+$OPTIONAL_FRAGMENTS = @('extra_sections.md', 'source_work_item_state.md')
 
 function Stop-Verification {
     param([string]$Message)
@@ -104,11 +115,33 @@ if ($current) { $sections[$current] = ($buffer -join "`n") }
 
 $failures = [System.Collections.Generic.List[string]]::new()
 
+$verified = 0
+
 foreach ($heading in $MAP.Keys) {
 
-    $fragmentPath = Join-Path $SectionsPath $MAP[$heading]
-    if (-not (Test-Path $fragmentPath)) {
-        $failures.Add("fragment missing: $($MAP[$heading])") | Out-Null
+    $spec  = $MAP[$heading]
+    $parts = [System.Collections.Generic.List[string]]::new()
+    $any   = $false
+
+    foreach ($file in $spec.files) {
+        $fragmentPath = Join-Path $SectionsPath $file
+        if (-not (Test-Path $fragmentPath)) {
+            if ($OPTIONAL_FRAGMENTS -contains $file) { continue }
+            $failures.Add("fragment missing: $file") | Out-Null
+            continue
+        }
+        $any = $true
+        # Resolve-Path first: .NET methods resolve relative paths against the
+        # process working directory, not the PowerShell location.
+        $abs = (Resolve-Path $fragmentPath).Path
+        $parts.Add(([System.IO.File]::ReadAllText($abs, [System.Text.Encoding]::UTF8)).TrimEnd()) | Out-Null
+    }
+
+    if (-not $any) {
+        if ($spec.optional -and -not $sections.Contains($heading)) { continue }
+        if ($spec.optional) {
+            $failures.Add("section '## $heading' is present but its fragment was not produced") | Out-Null
+        }
         continue
     }
 
@@ -117,8 +150,9 @@ foreach ($heading in $MAP.Keys) {
         continue
     }
 
-    $expected = Get-ComparableLines ([System.IO.File]::ReadAllText($fragmentPath, [System.Text.Encoding]::UTF8))
+    $expected = Get-ComparableLines (($parts.ToArray()) -join "`n`n")
     $actual   = Get-ComparableLines $sections[$heading]
+    $verified++
 
     $max = [Math]::Max($expected.Count, $actual.Count)
     for ($i = 0; $i -lt $max; $i++) {
@@ -144,5 +178,8 @@ if ($failures.Count -gt 0) {
     exit 1
 }
 
-Write-Output ("verification=ok sections={0}" -f $MAP.Count)
+# The count is of sections compared against a fragment. '## Governance Notes'
+# is checked for presence only and is not included: it has no counterpart in
+# the source, so there is nothing to compare it with.
+Write-Output ("verification=ok sections={0}" -f $verified)
 exit 0

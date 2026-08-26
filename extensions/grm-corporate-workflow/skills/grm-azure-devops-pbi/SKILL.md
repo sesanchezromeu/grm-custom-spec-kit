@@ -27,7 +27,7 @@ This skill carries no governance: readiness is assessed by `/corp.assess`.
 
 Copy each command character for character and substitute only the reference. Do
 not rebuild the paths, and do not invoke the scripts directly: the execution
-policy will refuse them.
+policy will refuse them. The host has Windows PowerShell 5.1 and no `pwsh`.
 
 ### 1. Retrieve
 
@@ -47,7 +47,7 @@ else is a failure: report the message the script printed and stop.
 ### 2. Assemble
 
 ```
-powershell -NoProfile -ExecutionPolicy Bypass -File .github\skills\grm-azure-devops-pbi\scripts\Build-ActivePbi.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File .github\skills\_shared\scripts\Build-ActivePbi.ps1
 ```
 
 Success is `build=ok`. This writes `.specify/memory/active-pbi.md` from the
@@ -56,12 +56,12 @@ fragments produced in step 1.
 ### 3. Verify
 
 ```
-powershell -NoProfile -ExecutionPolicy Bypass -File .github\skills\grm-azure-devops-pbi\scripts\Assert-ActivePbi.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File .github\skills\_shared\scripts\Assert-ActivePbi.ps1
 ```
 
 Success is `verification=ok`. On `verification=failed`, the load has failed:
 report the difference the verifier printed, verbatim, and stop. Do not correct
-the file.
+the file. Repairing the artifact until the check passes is not verification.
 
 ## Report
 

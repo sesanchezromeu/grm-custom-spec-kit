@@ -1,99 +1,82 @@
 ---
 name: grm-pbi-source-markdown
-description: Resolve and read a Product Backlog Item from a local Markdown file and return it as a normalized PBI payload for the corporate load command. Use this skill when a PBI reference is a local file path, when the corporate workflow is invoked with the --file flag, when loading a PBI from disk, from the samples folder, from a repository path or from an exported Markdown backlog item, or whenever a corporate command needs the content of a PBI that lives in a Markdown file rather than in a remote backlog.
+description: Read a Product Backlog Item from a local Markdown file and load it into the corporate active PBI context. Use this skill when a PBI reference is a local file path, when the corporate workflow is invoked with the --file flag, when loading a PBI from disk, from the samples folder, from a repository path or from an exported Markdown backlog item, or whenever a corporate command needs the content of a PBI that lives in a Markdown file rather than in a remote backlog.
 ---
 
-# PBI source adapter — local Markdown file
+# PBI source adapter - local Markdown file
 
-Resolve a local Markdown path, read it, return a normalized PBI payload.
-Read this whole file before acting. It is short by design.
+Three commands, in order. You run them and report what they return.
 
-## Five rules that override everything else
+## Four rules that override everything else
 
-1. **Read only.** Never write, move, rename or delete any file. Never write
-   `.specify/memory/active-pbi.md`, `.specify/feature.json` or anything under
-   `features/`. Writing the active PBI belongs to the calling command.
-2. **No shell.** Never invoke a terminal, script or command to obtain any field.
-   This skill reads files; it does not execute anything.
-3. **`Reference` is a path, never a file name.** Emit the complete resolved path.
-   Emitting only the file name is an error, not an abbreviation.
-4. **Never invent.** Absent information is reported as absent, never inferred.
-5. **Four-part report, always.** Envelope, body, missing sections, verification.
-   Omitting part 3 or 4 is an incomplete response, not a concise one.
+1. **You do not write the active PBI.** The scripts read, route, assemble and
+   verify. Never create or edit `.specify/memory/active-pbi.md`, the payload or
+   the fragments by hand, not even to fix something that looks wrong.
+2. **You never author PBI content.** Do not summarise, rephrase, reorder,
+   reindent or normalise punctuation. Straight quotes are not an improvement
+   over typographic ones, and three spaces of indentation are not an error to
+   be corrected.
+3. **Stop on the first failure.** Any command that does not return its success
+   line ends the load. Do not retry with a different path, do not substitute a
+   similar file, do not continue to `/corp.assess`.
+4. **Never invent, never reconstruct.** A fabricated PBI is worse than a failed
+   load. Report the failure as printed.
 
-No governance rules here: this skill does not judge readiness, gate the workflow
-or recommend a next command. Readiness is assessed by `/corp.assess`.
-
-## Rule 3 in detail
-
-Two PBIs in different folders can share a file name, so a bare name does not
-identify the source. Never shorten, prettify or strip directories:
-
-- `samples/PBI-POC-02-conversion-moneda.md` → emit it whole, **not** `PBI-POC-02-conversion-moneda.md`
-- `C:\proj\samples\pbi-01.md` → emit it whole, **not** `pbi-01.md`
-- `../backlog/pbi-07.md` → emit it whole, **not** `pbi-07.md`
+This skill carries no governance: readiness is assessed by `/corp.assess`.
 
 ## Procedure
 
-### 1. Resolve the path — and record it now
+Copy each command character for character and substitute only the path. Do not
+rebuild the paths, and do not invoke the scripts directly: the execution policy
+will refuse them. The host has Windows PowerShell 5.1 and no `pwsh`.
 
-Accept the path as provided; resolve relative paths against the workspace root.
+### 1. Read
 
-**First action, before reading anything:** copy the path string you were given,
-character for character, and hold it as `Reference`. A copy, not a derivation —
-you are echoing the input, not naming the file. Deciding it later, while
-formatting the envelope, is how the directories get lost.
-Stop and report, without substituting a similar file or creating one:
+```
+powershell -NoProfile -ExecutionPolicy Bypass -File .github\skills\grm-pbi-source-markdown\scripts\Read-PbiMarkdown.ps1 -Reference "<path>"
+```
 
-- no path given → `Missing input file.`
-- does not exist → `PBI Markdown file not found: <path>`
-- is a directory → `Path is a directory, not a PBI file: <path>`
-- not `.md` → `Source file is not a Markdown file: <path>`
+The path is whatever the user provided, unchanged. Do not absolutise it, do not
+convert its separators, do not strip its directories. The script echoes it into
+the envelope exactly as received.
 
-### 2. Read the file in full — do not read a fragment and extrapolate
+Success is a line reading `status=ok payload=<path> sections=<path>`. Anything
+else is a failure: report the message the script printed and stop.
 
-### 3. Minimum loadability check
+### 2. Assemble
 
-Locate a title, a description or objective, and acceptance criteria; if none can be
-found, stop and report which are missing. Missing *optional* sections — out of scope,
-dependencies, constraints, notes — are reported, not fatal.
+```
+powershell -NoProfile -ExecutionPolicy Bypass -File .github\skills\_shared\scripts\Build-ActivePbi.ps1
+```
 
-### 4. Envelope
+Success is `build=ok`. This writes `.specify/memory/active-pbi.md` from the
+fragments produced in step 1.
 
-Fields that do not apply are emitted literally as `Not applicable`: never blank, never omitted, never guessed.
+### 3. Verify
 
-| Field | Value |
-|---|---|
-| Type | `Markdown file` |
-| Reference | the string recorded in step 1, unchanged — see rule 3 |
-| Organization / Project / Work item ID / Work item type / Revision | `Not applicable` |
-| Changed at | last-modified timestamp if the host exposes it, else `Not recorded` |
-| Retrieved via | `Local file read` |
+```
+powershell -NoProfile -ExecutionPolicy Bypass -File .github\skills\_shared\scripts\Assert-ActivePbi.ps1
+```
 
-A blocked or unavailable timestamp is `Not recorded` and the load continues — never a reason to reach for a shell, never a reason to stop.
-
-### 5. Return the body verbatim
-
-Byte for byte. Never summarise, restructure, rewrite, normalise, reorder, translate,
-compress or reflow. Preserve every heading and its level, every list and its nesting
-depth, every table, code block and emphasis, and the original language. Preserve
-**every finite list of allowed values** — a set of tax rates such as `0 %`, `4 %`,
-`10 %`, `21 %` is a business rule, and dropping one item changes the specification.
-
-### 6. Verify no omission
-
-1. Count headings per level in source and payload. **State the actual counts**
-   (e.g. 1 at level 2, 9 at level 3, 5 at level 4). Never report an uncounted total.
-2. Every source list item appears at the same nesting depth.
-3. The payload contains no text absent from the source.
-
-Failure → stop and report. Never return a partial payload: it looks complete and silently narrows scope.
+Success is `verification=ok`. On `verification=failed`, the load has failed:
+report the difference the verifier printed, verbatim, and stop. Do not correct
+the file. Repairing the artifact until the check passes is not verification.
 
 ## Report
 
-1. `Source envelope` — all nine fields.
-2. `Verbatim body` — heading levels unchanged.
-3. `Missing optional sections` — or `None detected.`
-4. `Completeness verification` — the counts from step 6.
+Read these four files and transcribe them. Do not compute anything.
 
-Then stop; the calling command decides what happens next.
+- `.specify/memory/.grm-pbi-sections/source.md` -> `Source envelope`
+- `.specify/memory/.grm-pbi-sections/missing_optional.md` -> `Missing obvious metadata`
+- `.specify/memory/.grm-pbi-sections/warnings.md` -> `Source warnings`
+- `.specify/memory/.grm-pbi-sections/verification.md` -> `Completeness verification`
+
+Then state that the active PBI was written and verified, and stop. The calling
+command decides what happens next. Do not restate the PBI content in your reply:
+it is in the file.
+
+## Reference material
+
+Consult only when something is unclear. Not required reading.
+
+- `references/section-routing.md` - the heading table and what is appended after Notes

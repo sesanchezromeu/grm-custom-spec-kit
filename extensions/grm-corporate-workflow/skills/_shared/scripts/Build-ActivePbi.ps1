@@ -42,20 +42,31 @@ $DEFAULT_GOVERNANCE = @(
 ) -join "`r`n"
 
 # Heading -> fragment. Order is the order of the file.
+#
+# Optional entries (D-P16b-02) exist on one source and not the other:
+# 'Source work item state' has no counterpart in a Markdown file, and the
+# extra sections appended after Notes have none in a work item. A missing
+# optional fragment is skipped; a missing mandatory one aborts the build.
+#
+# 'extra_sections.md' is raw: it already carries its own '## ' headings,
+# copied from the source, so the builder must not add one. It is placed
+# immediately after Notes, which is where the Canonical section rule of
+# corp.load.agent.md requires a source section without canonical counterpart.
 $LAYOUT = [ordered]@{
-    'Source'                          = 'source.md'
-    'Original PBI Content (Verbatim)' = 'verbatim.md'
-    'PBI ID'                          = 'pbi_id.md'
-    'Title'                           = 'title.md'
-    'Description'                     = 'description.md'
-    'Business Context'                = 'business_context.md'
-    'Acceptance Criteria'             = 'acceptance_criteria.md'
-    'Constraints'                     = 'constraints.md'
-    'Dependencies'                    = 'dependencies.md'
-    'Out of Scope'                    = 'out_of_scope.md'
-    'Notes'                           = 'notes.md'
-    'Governance Notes'                = $null            # fixed text, not from source
-    'Source work item state'          = 'source_work_item_state.md'
+    'Source'                          = @{ file = 'source.md' }
+    'Original PBI Content (Verbatim)' = @{ file = 'verbatim.md' }
+    'PBI ID'                          = @{ file = 'pbi_id.md' }
+    'Title'                           = @{ file = 'title.md' }
+    'Description'                     = @{ file = 'description.md' }
+    'Business Context'                = @{ file = 'business_context.md' }
+    'Acceptance Criteria'             = @{ file = 'acceptance_criteria.md' }
+    'Constraints'                     = @{ file = 'constraints.md' }
+    'Dependencies'                    = @{ file = 'dependencies.md' }
+    'Out of Scope'                    = @{ file = 'out_of_scope.md' }
+    'Notes'                           = @{ file = 'notes.md' }
+    '<extra>'                         = @{ file = 'extra_sections.md'; optional = $true; raw = $true }
+    'Governance Notes'                = @{ file = $null }   # fixed text, not from source
+    'Source work item state'          = @{ file = 'source_work_item_state.md'; optional = $true }
 }
 
 function Stop-Build {
@@ -78,20 +89,23 @@ if ($GovernanceNotesPath) {
     $governance = ([System.IO.File]::ReadAllText($abs, [System.Text.Encoding]::UTF8)).TrimEnd()
 }
 
-$out = [System.Collections.Generic.List[string]]::new()
+$out     = [System.Collections.Generic.List[string]]::new()
+$written = 0
 $out.Add('# Active PBI') | Out-Null
 
 foreach ($heading in $LAYOUT.Keys) {
 
+    $spec = $LAYOUT[$heading]
     $body = $null
 
-    if ($null -eq $LAYOUT[$heading]) {
+    if ($null -eq $spec.file) {
         $body = $governance
     }
     else {
-        $fragment = Join-Path $SectionsPath $LAYOUT[$heading]
+        $fragment = Join-Path $SectionsPath $spec.file
         if (-not (Test-Path $fragment)) {
-            Stop-Build ("Fragment missing: {0}. The retrieval is incomplete; nothing was written." -f $LAYOUT[$heading])
+            if ($spec.optional) { continue }
+            Stop-Build ("Fragment missing: {0}. The retrieval is incomplete; nothing was written." -f $spec.file)
         }
         # Resolve-Path first: .NET methods resolve relative paths against the
         # process working directory, not the PowerShell location.
@@ -100,12 +114,14 @@ foreach ($heading in $LAYOUT.Keys) {
     }
 
     if ([string]::IsNullOrWhiteSpace($body)) {
+        if ($spec.optional) { continue }
         Stop-Build ("Section '{0}' resolved to empty content. Nothing was written." -f $heading)
     }
 
     $out.Add('') | Out-Null
-    $out.Add('## ' + $heading) | Out-Null
+    if (-not $spec.raw) { $out.Add('## ' + $heading) | Out-Null }
     foreach ($line in ($body -split "`r?`n")) { $out.Add($line) | Out-Null }
+    $written++
 }
 
 $dir = Split-Path -Parent $ActivePbiPath
@@ -121,5 +137,5 @@ $text = ($out -join "`r`n") + "`r`n"
     $text,
     (New-Object System.Text.UTF8Encoding($true)))
 
-Write-Output ("build=ok active_pbi={0} sections={1}" -f $ActivePbiPath, ($LAYOUT.Count))
+Write-Output ("build=ok active_pbi={0} sections={1}" -f $ActivePbiPath, $written)
 exit 0

@@ -59,7 +59,18 @@ Dispatch is determined by the flag alone, never by inspecting the reference:
 - `--file` → `grm-pbi-source-markdown`
 - `--backlog` → `grm-azure-devops-pbi`
 
-The skill retrieves and normalizes the source content and returns it to you. The skill does not write any artifact. All writes described below are performed by this command.
+#### Mechanical assembly principle
+
+You never write what a script can assemble and verify.
+
+A skill may write an artifact when the write is mechanical and is checked afterwards against the source it came from. A skill may not write an artifact that depends on your judgement about the content. This is not a concession: it is the rule that governs which side of the boundary each source falls on.
+
+In an observed run you retrieved a work item correctly and then produced an `active-pbi.md` that added a dialog option, a modal requirement and a localisation requirement absent from the work item, dropped an informational message and a traceability rule present in it, and normalised typographic quotes. It read impeccably. The instructions forbidding all of that were already in place and did not prevent it. Assembly is therefore mechanical wherever a script can do it.
+
+Consequences by source:
+
+- `--backlog`: the skill's scripts write `.specify/memory/active-pbi.md`, the payload and the section fragments, and verify the file against the fragments. You run the commands and transcribe what they print. You write nothing and correct nothing.
+- `--file`: the skill returns the normalized content and **you** write the file, following the Full PBI preservation rule, the Canonical section rule and the Required active PBI format below. Those three rules govern this path only.
 
 ### Corporate workflow
 
@@ -114,10 +125,12 @@ When invoked, you MUST execute these steps in order:
 - Write .specify/memory/active-pbi.md:
   - Source `--file`: create or overwrite it with the loaded PBI content, following the Full PBI preservation rule, the Canonical section rule and the Required active PBI format below.
   - Source `--backlog`: you do not write it. The source skill assembles it mechanically from the retrieved fragments and verifies the result. Follow the skill's procedure and report what it returns.
-- Re-read .specify/memory/active-pbi.md.
-- Verify that the ## Source section contains the exact input reference provided by the user.
-- Verify that the loaded title or PBI ID corresponds to the source.
+- Verify that the file was written:
+  - Source `--file`: re-read .specify/memory/active-pbi.md, verify that the ## Source section carries the Reference the skill emitted and that the loaded title or PBI ID corresponds to the source.
+  - Source `--backlog`: the verification is the skill's `verification=ok`. Do not re-derive it by reading the file and judging it. A judgement of yours neither adds to that result nor overrides it.
 - Only then report success.
+
+The `Reference` field carries the reference as the source skill emitted it, not the string the user typed. For `--backlog` the resolver normalizes proxy hosts and the several accepted URL shapes, so a normalized reference that differs from the input is the expected outcome, never a load failure.
 
 If context reset fails, STOP and report:
 Corporate context reset failed: PBI was not loaded. Resolve the reset issue and run /corp.load again.
@@ -221,9 +234,9 @@ If the file cannot be written, report the failure and do not say that the PBI wa
 
 ### Full PBI preservation rule
 
-/corp.load must preserve the source PBI content without functional loss.
+**Applies to the `--file` source.** With `--backlog` the file is assembled and verified by scripts; see the Mechanical assembly principle.
 
-This rule, the Canonical section rule and the Required active PBI format below tell **you** how to write the file. They apply when you write it, which is the `--file` source. With `--backlog` the file is assembled by a script from verified fragments and checked against them afterwards; the same guarantees hold, enforced mechanically rather than by instruction. Do not write or edit the file yourself on that path.
+/corp.load must preserve the source PBI content without functional loss.
 
 The generated .specify/memory/active-pbi.md must include:
 - A metadata header with the source envelope.
@@ -258,6 +271,8 @@ If preservation cannot be guaranteed, stop and report an error instead of genera
 
 ### Canonical section rule
 
+**Applies to the `--file` source.**
+
 The canonical sections below (## PBI ID through ## Notes) are filled by **copying**
 the corresponding fragment of the source, character for character, including its
 line breaks, list markers and indentation. They are not written by you. You are
@@ -286,6 +301,8 @@ an existing file when overwriting it. Accented characters must survive the write
 byte for byte.
 
 ### Required active PBI format
+
+**This is the structure you write for the `--file` source.** For `--backlog` it is the structure the skill's assembly script produces, with the two differences noted after the layout; it is recorded here so the file has one documented shape, not so that you reproduce it by hand.
 
 The generated .specify/memory/active-pbi.md file must follow this structure:
 
@@ -340,6 +357,14 @@ The generated .specify/memory/active-pbi.md file must follow this structure:
 - Technical assumptions may be identified later by /corp.assess.
 - No free-form functional specification has been generated.
 
+## Source work item state
+<System.State and System.Reason as retrieved. Backlog source only; absent for a Markdown source>
+
+Two differences apply to the `--backlog` source, both produced by the assembly script and both intentional:
+
+- `## Source work item state` is the last section of the file and exists only on this path. It carries the state of the work item at retrieval time. It is kept apart from `## Governance Notes` so that corporate governance and the state of the origin never appear as lines of the same list.
+- The body under `## Original PBI Content (Verbatim)` is the retrieved description, a horizontal rule, and the acceptance criteria introduced by a bold label. The label is bold rather than a heading because a `##` line inside a fragment would break the section boundaries the verifier relies on.
+
 The envelope fields that do not apply to the resolved source are written literally as "Not applicable". They are never left blank and never omitted.
 
 For a backlog source, the Revision field is mandatory and must carry the work item revision returned by the skill. A file is immutable; a work item is not. Without the revision, traceability breaks at the first edit made after the load.
@@ -358,14 +383,19 @@ After loading the PBI, respond with:
 ### Summary
 - PBI ID:
 - Title:
-- Acceptance criteria detected:
-- Dependencies detected:
+
+Both come from the envelope. Do not count, detect, classify or otherwise compute anything about the PBI content for this report. Counting is the skill's job and its figures belong in Completeness verification below.
 
 ### Missing obvious metadata
-<List missing optional or relevant metadata. If none, write "None detected.">
+<Source `--file`: the missing optional sections the skill reported. Source `--backlog`: absent fields already carry their absence literal in the file, so write "None detected." Never derive this by inspecting the content yourself.>
 
 ### Source warnings
 <Warnings reported by the source skill, such as comments present on the work item or artifact links detected. If none, write "None detected.">
+
+### Completeness verification
+<The figures the source skill produced, transcribed as printed. Source `--backlog`: the contents of .specify/memory/.grm-pbi-sections/verification.md, plus the verifier's `verification=ok` line. Source `--file`: the counts from the skill's verification step.>
+
+This section is never omitted and never summarized. A load reported without its figures is an unverified load, whatever the rest of the report says. Do not replace a figure with a word: "all sections preserved" is not a count.
 
 ### Governance reminder
 The loaded PBI is the functional source of truth.

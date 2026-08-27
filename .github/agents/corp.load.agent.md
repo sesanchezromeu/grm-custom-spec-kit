@@ -111,12 +111,12 @@ Do not continue with synthetic content.
 #### Mandatory execution order
 
 When invoked, you MUST execute these steps in order:
-- Perform mandatory corporate context reset before loading the new PBI by applying the current /corp.erase policy:
-  - Reset .specify/memory/active-pbi.md.
-  - Ensure features/ exists.
-  - Preserve all historical feature folders and delivery artifacts under features/.
-  - Remove .specify/feature.json if it exists.
-  - Verify that the active context reset completed successfully.
+- Perform the mandatory corporate context reset by running this command from the repository root, before any retrieval:
+
+  powershell -NoProfile -ExecutionPolicy Bypass -File .github\skills\_shared\scripts\Reset-ActiveContext.ps1
+
+  That script is the /corp.erase policy in executable form. It snapshots features/ before touching anything, writes the empty-state stub, ensures features/ exists, removes .specify/feature.json if present, and computes every verification line. You do not reset anything by hand and you do not add checks of your own around it.
+- Read the script's last line. Continue only on `reset=ok`.
 - Load the source skill corresponding to the provided flag.
 - Follow the skill's procedure. Its scripts retrieve the source, assemble `.specify/memory/active-pbi.md` and verify it.
 - The verification is the skill's `verification=ok`. Do not re-derive it by reading the file and judging it: a judgement of yours neither adds to that result nor overrides it.
@@ -124,7 +124,7 @@ When invoked, you MUST execute these steps in order:
 
 The `Reference` field carries the reference as the source skill emitted it, not the string the user typed. For `--backlog` the resolver normalizes proxy hosts and the several accepted URL shapes, so a normalized reference that differs from the input is the expected outcome, never a load failure.
 
-If context reset fails, STOP and report:
+If the reset script prints `reset=failed`, or exits with a code other than 0, STOP and report:
 Corporate context reset failed: PBI was not loaded. Resolve the reset issue and run /corp.load again.
 
 If the required skill cannot be loaded, STOP and report:
@@ -175,6 +175,7 @@ Allowed write locations:
 
 Allowed operations:
 - create .specify/memory/ if needed,
+- reset .specify/memory/active-pbi.md, features/ and .specify/feature.json through .github/skills/_shared/scripts/Reset-ActiveContext.ps1, before any retrieval,
 - create or overwrite .specify/memory/active-pbi.md through the source skill's assembly script, on either path,
 - create or overwrite .specify/memory/.grm-pbi-payload.json and .specify/memory/.grm-pbi-sections/ through the source skill's scripts,
 - ensure features/ exists,
@@ -196,20 +197,14 @@ Forbidden write locations include:
 
 The source PBI must remain read-only.
 
+Two scripts write .specify/memory/active-pbi.md and you are neither of them. Reset-ActiveContext.ps1 writes the empty state; the source skill's assembly script writes every byte of loaded PBI content. You never write that file by hand, on either path, not to reset it and not to correct it.
+
 ### Historical feature preservation rule
 
 /corp.load must not define or perform an independent destructive cleanup of features/.
-/corp.load must follow the same preservation policy as /corp.erase.
+/corp.load must follow the same preservation policy as /corp.erase, which is defined in .github/agents/corp.erase.agent.md.
 
-Historical feature folders and delivery artifacts must be preserved, including:
-- features/<feature-folder>/spec.md
-- features/<feature-folder>/plan.md
-- features/<feature-folder>/tasks.md
-- features/<feature-folder>/research.md
-- features/<feature-folder>/quickstart.md
-- features/<feature-folder>/data-model.md
-- features/<feature-folder>/contracts/
-- features/<feature-folder>/*delivery-doc.md
+Preservation is verified, not asserted: Reset-ActiveContext.ps1 records every entry under features/ with its size before it acts and compares afterwards, so the guarantee covers the whole tree and not a list of expected file names.
 
 ### Real execution requirement
 
@@ -299,20 +294,28 @@ For a backlog source, the Revision field is mandatory and carries the work item 
 
 ### Completion report
 
+The report consists of exactly these nine sections, in this order:
+
+`## PBI loaded successfully`, `### Source`, `### Active PBI context`, `### Summary`, `### Missing obvious metadata`, `### Source warnings`, `### Completeness verification`, `### Governance reminder`, `### Recommended next command`.
+
+That list is closed. Do not add a section, do not remove one, do not reorder them, do not rename them. If you retrieved something the report has no section for, it does not belong in the report. In particular: the state of the source work item is written into the file by the assembly script and is not reported here, and the envelope is not transcribed under `### Source`.
+
+Write every path in full, exactly as printed below. `active-pbi.md` is not `.specify/memory/active-pbi.md`.
+
 After loading the PBI, respond with:
 
 ## PBI loaded successfully
 ### Source
-<source reference>
+<The Reference field of the envelope, copied whole. It is a path or a work item reference and it carries its directory. Never the bare file name, never the rest of the envelope.>
 
 ### Active PBI context
 .specify/memory/active-pbi.md
 
 ### Summary
-- PBI ID:
-- Title:
+- PBI ID: <the contents of .specify/memory/.grm-pbi-sections/pbi_id.md>
+- Title: <the contents of .specify/memory/.grm-pbi-sections/title.md>
 
-Both come from the envelope. Do not count, detect, classify or otherwise compute anything about the PBI content for this report. Counting is the skill's job and its figures belong in Completeness verification below.
+Read those two fragments. Do not look the values up in .specify/memory/active-pbi.md: the fragments are what the assembly script wrote the file from, and they are the shorter path to the same value. Do not count, detect, classify or otherwise compute anything about the PBI content for this report. Counting is the skill's job and its figures belong in Completeness verification below.
 
 ### Missing obvious metadata
 <The optional sections the source skill reported absent. For `--file` this is the contents of missing_optional.md. For `--backlog` absent fields already carry their absence literal in the file, so write "None detected." Never derive this by inspecting the content yourself.>
@@ -331,8 +334,12 @@ No functional specification has been generated.
 Functional changes must be escalated to the Product Owner.
 Historical feature delivery artifacts under features/ have been preserved.
 
+Those four lines are fixed text. Transcribe them as four separate lines, in this order, word for word. Do not merge them into a paragraph, do not turn them into a bulleted list, do not rephrase them, do not add a fifth.
+
 ### Recommended next command
 /corp.assess
+
+The report ends there. Nothing follows it.
 
 ### Error report
 
@@ -349,7 +356,9 @@ If loading fails, respond with:
 /corp.load --file <path-to-pbi-markdown>
 /corp.load --backlog <work-item-url-or-key:id>
 
-### Recommended next command
+Those four sections are closed too, in that order. A failed load reports the failure and nothing else: no partial content, no diagnosis of your own, no suggestion of what the PBI might have contained.
+
+### Next command policy
 
 If the PBI is loaded successfully, always recommend:
 /corp.assess

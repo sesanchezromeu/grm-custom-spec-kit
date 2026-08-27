@@ -175,6 +175,7 @@ Allowed write locations:
 
 Allowed operations:
 - create .specify/memory/ if needed,
+- write the /corp.erase empty-state stub into .specify/memory/active-pbi.md as part of the mandatory context reset, before any retrieval,
 - create or overwrite .specify/memory/active-pbi.md through the source skill's assembly script, on either path,
 - create or overwrite .specify/memory/.grm-pbi-payload.json and .specify/memory/.grm-pbi-sections/ through the source skill's scripts,
 - ensure features/ exists,
@@ -195,6 +196,8 @@ Forbidden write locations include:
 - resources/
 
 The source PBI must remain read-only.
+
+Those are the only two writers of .specify/memory/active-pbi.md. The reset stub is written by you and contains nothing but the empty state /corp.erase requires. Every byte of loaded PBI content is written by the assembly script. You never write PBI content into that file by hand, on either path, not even to correct it.
 
 ### Historical feature preservation rule
 
@@ -299,20 +302,28 @@ For a backlog source, the Revision field is mandatory and carries the work item 
 
 ### Completion report
 
+The report consists of exactly these nine sections, in this order:
+
+`## PBI loaded successfully`, `### Source`, `### Active PBI context`, `### Summary`, `### Missing obvious metadata`, `### Source warnings`, `### Completeness verification`, `### Governance reminder`, `### Recommended next command`.
+
+That list is closed. Do not add a section, do not remove one, do not reorder them, do not rename them. If you retrieved something the report has no section for, it does not belong in the report. In particular: the state of the source work item is written into the file by the assembly script and is not reported here, and the envelope is not transcribed under `### Source`.
+
+Write every path in full, exactly as printed below. `active-pbi.md` is not `.specify/memory/active-pbi.md`.
+
 After loading the PBI, respond with:
 
 ## PBI loaded successfully
 ### Source
-<source reference>
+<The Reference field of the envelope, copied whole. It is a path or a work item reference and it carries its directory. Never the bare file name, never the rest of the envelope.>
 
 ### Active PBI context
 .specify/memory/active-pbi.md
 
 ### Summary
-- PBI ID:
-- Title:
+- PBI ID: <the contents of .specify/memory/.grm-pbi-sections/pbi_id.md>
+- Title: <the contents of .specify/memory/.grm-pbi-sections/title.md>
 
-Both come from the envelope. Do not count, detect, classify or otherwise compute anything about the PBI content for this report. Counting is the skill's job and its figures belong in Completeness verification below.
+Read those two fragments. Do not look the values up in .specify/memory/active-pbi.md: the fragments are what the assembly script wrote the file from, and they are the shorter path to the same value. Do not count, detect, classify or otherwise compute anything about the PBI content for this report. Counting is the skill's job and its figures belong in Completeness verification below.
 
 ### Missing obvious metadata
 <The optional sections the source skill reported absent. For `--file` this is the contents of missing_optional.md. For `--backlog` absent fields already carry their absence literal in the file, so write "None detected." Never derive this by inspecting the content yourself.>
@@ -331,8 +342,12 @@ No functional specification has been generated.
 Functional changes must be escalated to the Product Owner.
 Historical feature delivery artifacts under features/ have been preserved.
 
+Those four lines are fixed text. Transcribe them as four separate lines, in this order, word for word. Do not merge them into a paragraph, do not turn them into a bulleted list, do not rephrase them, do not add a fifth.
+
 ### Recommended next command
 /corp.assess
+
+The report ends there. Nothing follows it.
 
 ### Error report
 
@@ -349,7 +364,9 @@ If loading fails, respond with:
 /corp.load --file <path-to-pbi-markdown>
 /corp.load --backlog <work-item-url-or-key:id>
 
-### Recommended next command
+Those four sections are closed too, in that order. A failed load reports the failure and nothing else: no partial content, no diagnosis of your own, no suggestion of what the PBI might have contained.
+
+### Next command policy
 
 If the PBI is loaded successfully, always recommend:
 /corp.assess

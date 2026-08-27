@@ -111,12 +111,12 @@ Do not continue with synthetic content.
 #### Mandatory execution order
 
 When invoked, you MUST execute these steps in order:
-- Perform mandatory corporate context reset before loading the new PBI by applying the current /corp.erase policy:
-  - Reset .specify/memory/active-pbi.md.
-  - Ensure features/ exists.
-  - Preserve all historical feature folders and delivery artifacts under features/.
-  - Remove .specify/feature.json if it exists.
-  - Verify that the active context reset completed successfully.
+- Perform the mandatory corporate context reset by running this command from the repository root, before any retrieval:
+
+  powershell -NoProfile -ExecutionPolicy Bypass -File .github\skills\_shared\scripts\Reset-ActiveContext.ps1
+
+  That script is the /corp.erase policy in executable form. It snapshots features/ before touching anything, writes the empty-state stub, ensures features/ exists, removes .specify/feature.json if present, and computes every verification line. You do not reset anything by hand and you do not add checks of your own around it.
+- Read the script's last line. Continue only on `reset=ok`.
 - Load the source skill corresponding to the provided flag.
 - Follow the skill's procedure. Its scripts retrieve the source, assemble `.specify/memory/active-pbi.md` and verify it.
 - The verification is the skill's `verification=ok`. Do not re-derive it by reading the file and judging it: a judgement of yours neither adds to that result nor overrides it.
@@ -124,7 +124,7 @@ When invoked, you MUST execute these steps in order:
 
 The `Reference` field carries the reference as the source skill emitted it, not the string the user typed. For `--backlog` the resolver normalizes proxy hosts and the several accepted URL shapes, so a normalized reference that differs from the input is the expected outcome, never a load failure.
 
-If context reset fails, STOP and report:
+If the reset script prints `reset=failed`, or exits with a code other than 0, STOP and report:
 Corporate context reset failed: PBI was not loaded. Resolve the reset issue and run /corp.load again.
 
 If the required skill cannot be loaded, STOP and report:
@@ -175,7 +175,7 @@ Allowed write locations:
 
 Allowed operations:
 - create .specify/memory/ if needed,
-- write the /corp.erase empty-state stub into .specify/memory/active-pbi.md as part of the mandatory context reset, before any retrieval,
+- reset .specify/memory/active-pbi.md, features/ and .specify/feature.json through .github/skills/_shared/scripts/Reset-ActiveContext.ps1, before any retrieval,
 - create or overwrite .specify/memory/active-pbi.md through the source skill's assembly script, on either path,
 - create or overwrite .specify/memory/.grm-pbi-payload.json and .specify/memory/.grm-pbi-sections/ through the source skill's scripts,
 - ensure features/ exists,
@@ -197,22 +197,14 @@ Forbidden write locations include:
 
 The source PBI must remain read-only.
 
-Those are the only two writers of .specify/memory/active-pbi.md. The reset stub is written by you and contains nothing but the empty state /corp.erase requires. Every byte of loaded PBI content is written by the assembly script. You never write PBI content into that file by hand, on either path, not even to correct it.
+Two scripts write .specify/memory/active-pbi.md and you are neither of them. Reset-ActiveContext.ps1 writes the empty state; the source skill's assembly script writes every byte of loaded PBI content. You never write that file by hand, on either path, not to reset it and not to correct it.
 
 ### Historical feature preservation rule
 
 /corp.load must not define or perform an independent destructive cleanup of features/.
-/corp.load must follow the same preservation policy as /corp.erase.
+/corp.load must follow the same preservation policy as /corp.erase, which is defined in .github/agents/corp.erase.agent.md.
 
-Historical feature folders and delivery artifacts must be preserved, including:
-- features/<feature-folder>/spec.md
-- features/<feature-folder>/plan.md
-- features/<feature-folder>/tasks.md
-- features/<feature-folder>/research.md
-- features/<feature-folder>/quickstart.md
-- features/<feature-folder>/data-model.md
-- features/<feature-folder>/contracts/
-- features/<feature-folder>/*delivery-doc.md
+Preservation is verified, not asserted: Reset-ActiveContext.ps1 records every entry under features/ with its size before it acts and compares afterwards, so the guarantee covers the whole tree and not a list of expected file names.
 
 ### Real execution requirement
 

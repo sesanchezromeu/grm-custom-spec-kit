@@ -16,75 +16,21 @@ The command must clean only:
 The command must preserve:
 - features/<feature-folder>/
 
-### Required actions
+### Required action
 
-#### 1. Reset active PBI memory
+Run this command from the repository root, and nothing else:
 
-Ensure this directory exists:
-.specify/memory/
+powershell -NoProfile -ExecutionPolicy Bypass -File .github\skills\_shared\scripts\Reset-ActiveContext.ps1
 
-Ensure this file exists:
-.specify/memory/active-pbi.md
+The script is the cleanup. It writes the empty-state stub, ensures features/ exists, removes .specify/feature.json if present, and verifies the four conditions by comparing features/ before and after. Nothing here is to be reimplemented inline: this file describes what the command is for, not how the cleanup is carried out.
 
-Overwrite .specify/memory/active-pbi.md with exactly this logical content:
+Continue only if the script's last line is `reset=ok`.
 
-# Active PBI
-No PBI loaded.
+### Output
 
-#### 2. Preserve historical features
+The response is the script's output, transcribed unchanged.
 
-Ensure this directory exists:
-features/
-
-Do not delete files or subdirectories inside features/.
-
-Do not delete historical feature folders such as:
-features/<feature-folder>/
-
-Do not delete historical delivery artifacts such as:
-- spec.md
-- plan.md
-- tasks.md
-- research.md
-- quickstart.md
-- data-model.md
-- contracts/
-- delivery documentation files
-
-If the features/ directory does not exist, recreate it.
-
-#### 3. Remove active feature pointer
-
-If this file exists:
-.specify/feature.json
-
-delete it.
-
-If it does not exist, report it as skipped.
-
-### Verification
-
-After cleanup, verify that:
-- .specify/memory/active-pbi.md exists.
-- .specify/memory/active-pbi.md contains No PBI loaded.
-- features/ exists.
-- Historical feature folders and artifacts under features/ were not deleted.
-- .specify/feature.json does not exist.
-
-### Mandatory output format
-
-Corporate context erased.
-Actions:
-- .specify/memory/active-pbi.md reset: <done|failed>
-- features/ preserved: <done|failed>
-- .specify/feature.json removed: <done|skipped|failed>
-Verification:
-- .specify/memory/active-pbi.md ready: <yes|no>
-- features/ exists: <yes|no>
-- historical feature artifacts preserved: <yes|no>
-- .specify/feature.json absent: <yes|no>
-Status:
-Clean active context ready for /corp.load
+The labels, their allowed values and the failure variant are defined in .github/agents/corp.erase.agent.md, Completion contract. That is their only home; do not restate them here.
 
 ### Constraints
 

@@ -63,13 +63,22 @@ Success is `verification=ok`. On `verification=failed`, the load has failed:
 report the difference the verifier printed, verbatim, and stop. Do not correct
 the file. Repairing the artifact until the check passes is not verification.
 
-## Report
+## What the load returns
 
-Read these three files and transcribe them. Do not compute anything.
+The scripts leave their output in `.specify/memory/.grm-pbi-sections/`. These
+are the fragments the calling command may need. Transcribe the ones it asks
+for, as written. Do not compute anything, and do not decide here how they are
+presented: the command owns its report and the names of its sections.
 
-- `.specify/memory/.grm-pbi-sections/source.md` -> `Source envelope`
-- `.specify/memory/.grm-pbi-sections/warnings.md` -> `Source warnings`
-- `.specify/memory/.grm-pbi-sections/verification.md` -> `Completeness verification`
+- `source.md` - the envelope of the load
+- `pbi_id.md` - the work item identifier
+- `title.md` - the PBI title
+- `warnings.md` - anything the retrieval raised as a warning, such as comments
+  on the work item or artifact links detected
+- `verification.md` - the completeness figures
+
+Every other fragment in that directory is PBI content. The assembly script
+consumes them; you do not read them out.
 
 Then state that the active PBI was written and verified, and stop. The calling
 command decides what happens next. Do not restate the PBI content in your reply:

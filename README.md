@@ -94,6 +94,8 @@ Defines:
 - Governance rules.
 - Agents.
 - Prompts.
+- Skills.
+- Shared scripts.
 - Corporate workflows.
 
 ### Runtime
@@ -139,8 +141,7 @@ Native workflows are preserved.
 ### Option A - Bootstrap Installation (Recommended)
 
 ```powershell
-.
-esourcesootstrapootstrap-grm-e2e.bat `
+.\resources\bootstrap\bootstrap-grm-e2e.bat `
   -TargetName e2e-demo-01 `
   -InstallMode CleanInstall `
   -Force
@@ -176,7 +177,7 @@ Manual installation remains the reference model.
 | Command | Purpose |
 |---|---|
 | corp.erase | Reset execution context |
-| corp.load | Load approved PBI |
+| corp.load | Load approved PBI from a markdown file or the Azure DevOps backlog |
 | corp.assess | Assess readiness and risks |
 | corp.plan | Generate bootstrap specification |
 | corp.doc | Generate authoritative documentation |
@@ -187,7 +188,7 @@ Manual installation remains the reference model.
 .github/          Runtime — corporate agents/prompts only (corp.* + declared overrides)
 .specify/         Runtime — corporate workflow (grm) + constitution variants only
 docs/             Documentation
-extensions/       Source of Truth — corporate command definitions
+extensions/       Source of Truth — corporate commands, agents, prompts and skills
 presets/          Source of Truth — governance overrides and guardrails
 resources/
 └── bootstrap/    Installer

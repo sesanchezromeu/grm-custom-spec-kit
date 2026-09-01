@@ -135,15 +135,16 @@ Reset the active execution context.
 
 - Remove active PBI state.
 - Remove feature execution state.
+- Preserve historical feature folders and delivery artifacts.
 - Prevent cross-PBI contamination.
 - Support clean retest scenarios.
 
 ### Managed Artifacts
 
 ```text
-.specify/memory/active-pbi.md
-.specify/feature.json
-features/
+.specify/memory/active-pbi.md    reset
+.specify/feature.json            removed
+features/                        ensured to exist, contents preserved
 ```
 
 ### Typical Usage
@@ -163,8 +164,12 @@ Load an approved PBI and initialize a clean execution context.
 ### Input
 
 ```text
-/corp.load --file <pbi.md>
+/corp.load --file <path-to-pbi-markdown>
+/corp.load --backlog <work-item-url-or-key:id>
 ```
+
+Exactly one source flag. The flag selects the skill that retrieves the PBI.
+Everything after retrieval is identical for both sources.
 
 ### Output
 
@@ -174,9 +179,9 @@ Load an approved PBI and initialize a clean execution context.
 
 ### Responsibilities
 
-- Execute corporate cleanup.
-- Load the approved PBI.
-- Create active execution context.
+- Reset the active execution context, preserving everything under `features/`.
+- Retrieve the approved PBI through the skill named by the source flag.
+- Assemble the active execution context and verify it against what was retrieved.
 - Establish functional baseline.
 
 ### Design Principle
@@ -301,6 +306,45 @@ The delivery document acts as the authoritative delivery record for the feature.
 
 ---
 
+# PBI Source Skills
+
+`corp.load` does not know how to reach a PBI. It selects a skill by the source
+flag and delegates retrieval to it.
+
+| Flag | Skill | Source |
+|---|---|---|
+| `--file` | `grm-pbi-source-markdown` | A markdown PBI in the repository |
+| `--backlog` | `grm-azure-devops-pbi` | An Azure DevOps work item |
+
+Skills are declared under `skills:` in `extension.yml`. A skill directory that is
+not declared there does not exist as far as the framework is concerned.
+
+## Division of Responsibility
+
+A skill retrieves and reports. It never writes `.specify/memory/active-pbi.md`,
+`.specify/feature.json` or anything under `features/`, and it never authors,
+summarizes, reorders or normalizes PBI content.
+
+Those artifacts are written and verified by scripts under
+`skills/_shared/scripts/`, which assemble the active PBI from the fragments a
+source skill produced and then verify the result against them. `_shared` is a
+script library, not a skill, and is deliberately absent from `extension.yml`.
+
+The split is empirical rather than stylistic. Instruction-based copying was
+tried and failed in both directions: content absent from the source appeared in
+the loaded PBI, content present in it was dropped, and typographic characters
+were normalized. Mechanical assembly and verification exist because the
+prohibition on its own did not hold.
+
+## Adding a Source
+
+A new source is a new skill plus a new flag on `corp.load`. The retrieval and
+reporting contract belongs to the skill; assembly, verification and the context
+lifecycle stay in `_shared` and in the command. See `Type 5 - Skill Change` in
+`docs/maintenance.md`.
+
+---
+
 # Relationship with Native Spec Kit
 
 The extension intentionally preserves native Spec Kit capabilities.
@@ -403,6 +447,10 @@ The extension is responsible for preserving this traceability chain.
 
 ```text
 grm-corporate-workflow/
+├── extension.yml
+├── README.md
+├── CHANGELOG.md
+│
 ├── agents/
 │   ├── corp.erase.agent.md
 │   ├── corp.load.agent.md
@@ -410,8 +458,32 @@ grm-corporate-workflow/
 │   ├── corp.plan.agent.md
 │   └── corp.doc.agent.md
 │
-└── prompts/
-    └── corp.doc.prompt.md
+├── prompts/
+│   ├── corp.erase.prompt.md
+│   ├── corp.load.prompt.md
+│   ├── corp.assess.prompt.md
+│   ├── corp.plan.prompt.md
+│   └── corp.doc.prompt.md
+│
+├── skills/
+│   ├── _shared/
+│   │   └── scripts/
+│   │       ├── Reset-ActiveContext.ps1
+│   │       ├── Build-ActivePbi.ps1
+│   │       └── Assert-ActivePbi.ps1
+│   │
+│   ├── grm-pbi-source-markdown/
+│   │   ├── SKILL.md
+│   │   ├── references/
+│   │   └── scripts/
+│   │
+│   └── grm-azure-devops-pbi/
+│       ├── SKILL.md
+│       ├── references/
+│       └── scripts/
+│
+└── config/
+    └── grm-backlog.example.yml
 ```
 
 ---

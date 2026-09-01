@@ -108,7 +108,7 @@ If the target directory already exists, the installer stops.
 Example:
 
 ```powershell
-.ootstrap-grm-e2e.bat -TargetName e2e-demo-01
+.\bootstrap-grm-e2e.bat -TargetName e2e-demo-01
 ```
 
 Expected result:
@@ -133,7 +133,7 @@ If the destination exists, `-Force` is mandatory.
 Example:
 
 ```powershell
-.ootstrap-grm-e2e.bat `
+.\bootstrap-grm-e2e.bat `
   -TargetName e2e-demo-01 `
   -InstallMode CleanInstall `
   -Force
@@ -154,7 +154,7 @@ Performs non-destructive update.
 Example:
 
 ```powershell
-.ootstrap-grm-e2e.bat `
+.\bootstrap-grm-e2e.bat `
   -TargetName e2e-demo-01 `
   -InstallMode UpdateExisting
 ```

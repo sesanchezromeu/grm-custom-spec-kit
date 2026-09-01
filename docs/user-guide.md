@@ -151,6 +151,12 @@ Use this sequence for a standard approved PBI.
 /corp.load --file samples/PBI-POC-01-calculadora-iva.md
 ```
 
+Or, when the approved PBI lives in the Azure DevOps backlog:
+
+```text
+/corp.load --backlog CDA:108047
+```
+
 Expected result:
 
 ```text
@@ -314,8 +320,8 @@ Reset the active execution context.
 ### Main Actions
 
 - Resets active PBI context.
-- Cleans generated features.
-- Removes feature execution state.
+- Ensures `features/` exists and preserves everything already under it.
+- Removes feature execution state (`.specify/feature.json`).
 
 ### Expected Outcome
 
@@ -332,24 +338,34 @@ Load an approved PBI and initialize a clean execution context.
 ### Syntax
 
 ```text
-/corp.load --file <pbi.md>
+/corp.load --file <path-to-pbi-markdown>
+/corp.load --backlog <work-item-url-or-key:id>
 ```
+
+Provide exactly one source flag.
 
 ### Input
 
-A markdown PBI file.
-
-Example:
+`--file` takes a markdown PBI file:
 
 ```text
 samples/PBI-POC-01-calculadora-iva.md
 ```
 
+`--backlog` takes an Azure DevOps work item, given either as a full URL or as a `<KEY>:<id>` pair resolved against the backlog catalogue:
+
+```text
+https://dev.azure.com/<organization>/<project>/_workitems/edit/<id>
+CDA:108047
+```
+
+A URL copied from the browser may carry the corporate proxy host and its query parameters. Paste it unchanged: it is normalized before use.
+
 ### Main Actions
 
-- Performs corporate cleanup.
-- Loads the approved PBI.
-- Creates active PBI context.
+- Resets the active execution context, preserving everything under `features/`.
+- Retrieves the PBI from the source named by the flag.
+- Assembles the active PBI context and verifies it against what was retrieved.
 
 ### Expected Output
 
@@ -357,9 +373,50 @@ samples/PBI-POC-01-calculadora-iva.md
 .specify/memory/active-pbi.md
 ```
 
+A load that fails writes nothing. There is no partial context to clean up.
+
 ### Important Rule
 
 Do not edit `active-pbi.md` manually. If the PBI is incorrect, update the source PBI and reload it.
+
+On the `--backlog` path the rule reaches further. The file is assembled and verified mechanically against the retrieved work item, so an edit breaks that correspondence and no later verification will restore it.
+
+### Backlog Catalogue
+
+`--backlog` resolves a `<KEY>:<id>` reference against `.specify/grm-backlog.yml`. Copy `.specify/grm-backlog.example.yml`, rename it and fill in one entry per backlog:
+
+```yaml
+provider: azure-devops
+
+backlogs:
+  <KEY>:
+    organization_url: https://dev.azure.com/<organization>
+    project: <project>
+```
+
+Keys are chosen by the project. There is no default backlog by design: a reference that does not name its backlog can resolve silently against the wrong one.
+
+The credential is never stored in this file. A token written into it must be considered compromised.
+
+Whichever form the reference takes, the project reported by Azure DevOps is checked after retrieval. A mismatch stops the load, so a work item is never taken from a project other than the intended one.
+
+### Personal Access Token
+
+Retrieval authenticates with a personal access token read from the `AZDO_PAT` environment variable. It is never passed as an argument, never written to a repository file and never echoed.
+
+Create it in Azure DevOps under User settings - Personal access tokens - New Token, granting read access to work items. **Scope it to a single organization.** Tokens scoped to all accessible organizations are withdrawn by Azure DevOps from 1 December 2026; this is a requirement, not a recommendation. The value is shown once.
+
+Set the variable for the user:
+
+```powershell
+[Environment]::SetEnvironmentVariable('AZDO_PAT', '<token>', 'User')
+```
+
+A persistent variable is not visible in sessions that are already open. Restart the terminal, and VS Code with it, or the load will report a missing credential while the variable exists.
+
+An expired token cannot be extended. Renewal means issuing a new one and updating the variable.
+
+The complete requirements, including maximum expiry and the exact scopes, are in `references/configuration.md` in the `grm-azure-devops-pbi` skill.
 
 ---
 
@@ -816,7 +873,7 @@ Avoid the following behaviors:
 
 ## 15.1 corp.load Fails
 
-Possible causes:
+Possible causes on `--file`:
 
 - Invalid file path.
 - PBI file does not exist.
@@ -824,13 +881,26 @@ Possible causes:
 - Repository is not opened at the expected root.
 - Write permissions are missing.
 
+Possible causes on `--backlog`:
+
+- The token has expired. Expiry and a permissions problem both surface as HTTP 401, and expiry is the more likely of the two.
+- `AZDO_PAT` is not visible in the session, usually because the terminal was opened before the variable was set.
+- The key in a `<KEY>:<id>` reference is not present in `.specify/grm-backlog.yml`.
+- The work item belongs to a project other than the one configured for that key.
+- The work item is not of an accepted type.
+- The work item has no description, or no acceptance criteria.
+- The completeness check found a difference between the retrieved content and the assembled file.
+
 Recommended actions:
 
-1. Verify the file path.
-2. Confirm the file exists.
+1. Verify the file path on `--file`, or the reference on `--backlog`.
+2. Confirm the source exists and is reachable.
 3. Use a path relative to the repository root.
-4. Verify write permissions.
-5. Re-run `corp.load`.
+4. On HTTP 401, reissue the token and restart the terminal before investigating permissions.
+5. Verify write permissions.
+6. Re-run `corp.load`.
+
+A failed load leaves the previous context reset and nothing written in its place.
 
 ---
 
@@ -1012,13 +1082,20 @@ Then continue from assessment.
 
 Current limitations:
 
-- PBI input is currently markdown-based.
-- Azure DevOps integration is not yet available.
+- PBI input is a markdown file or an Azure DevOps work item. No other source is supported.
 - MCP integration is not yet available.
 - Runtime synchronization is currently manual.
 - Some additional standard Spec Kit commands may require future governance review.
 - Copilot UI may display internal execution progress messages.
 - File links may appear shortened in the UI although they reference repository paths.
+
+Limitations specific to `--backlog`:
+
+- Comments on the work item are not loaded. Their presence is reported as a warning.
+- Child work items are not retrieved.
+- Attachments are referenced by their URL and never downloaded.
+- Artifact links are reported and then discarded.
+- A work item without a description, or without acceptance criteria, is rejected. It is never loaded partially.
 
 ---
 

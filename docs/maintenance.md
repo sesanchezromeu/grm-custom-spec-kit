@@ -555,8 +555,6 @@ Currently open:
 - `Get-DepthProfile` is defined twice across the shared scripts. Both copies
   behave identically today, which is exactly what makes a future divergence
   hard to notice.
-- `.github/skills/` is versioned in part: it carries the shared scripts needed
-  to run corporate commands in this repository, but not the skills themselves.
 
 ---
 

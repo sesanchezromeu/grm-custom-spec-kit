@@ -1143,8 +1143,7 @@ Before handing the repository to delivery teams, confirm:
 Current limitations:
 
 - Runtime synchronization remains an explicit architectural concern and must be validated after changes.
-- PBI source is currently markdown-based.
-- Azure DevOps integration is not yet available.
+- PBI source is a markdown file or an Azure DevOps work item. No other source is supported.
 - MCP integration is not yet available.
 - Additional Spec Kit commands may require future governance review.
 - Copilot UI may display internal execution progress messages.

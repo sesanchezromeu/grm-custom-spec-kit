@@ -1,7 +1,7 @@
 # GRM Custom Spec Kit
 
-Version: 1.1
-Last Updated: 2026-07-30
+Version: 1.2
+Last Updated: 2026-09-01
 Status: Release Candidate
 
 ## Overview

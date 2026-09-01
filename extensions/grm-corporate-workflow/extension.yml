@@ -2,7 +2,7 @@ id: grm-corporate-workflow
 
 name: GRM Corporate Workflow
 
-version: 1.0.0
+version: 1.1.0
 
 description: >
   Corporate workflow extension for Spec Kit implementing the
@@ -26,10 +26,10 @@ skills:
 
 metadata:
   release_status: Release Candidate
-  last_updated: 2026-07-22
+  last_updated: 2026-09-01
   architecture_model: Source of Truth / Runtime
   governance_model: PBI-driven development
-  documentation_version: 1.0
+  documentation_version: 1.1
 
 tags:
   - grm

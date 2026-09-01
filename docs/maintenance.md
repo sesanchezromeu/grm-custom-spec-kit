@@ -118,6 +118,9 @@ Contains:
 - Agents.
 - Prompts.
 - Workflow behavior.
+- Skills, under `skills/`.
+- Shared scripts, under `skills/_shared/scripts/`.
+- Configuration templates, under `config/`.
 
 ### presets/
 
@@ -142,6 +145,10 @@ Runtime exists to execute behavior.
 
 Source of Truth exists to define behavior.
 
+`.specify/` also holds project configuration that is not propagated from the
+Source of Truth, such as the backlog catalogue. Deployed templates are the
+starting point for those files, never their authority.
+
 ## Current Model
 
 ```text
@@ -152,14 +159,24 @@ manual synchronization
 .github
 ```
 
+Synchronization is not uniform. `skills/` is mirrored as a whole subtree.
+`agents/` and `prompts/` are copied file by file, by hand. Nothing detects a
+file that was left behind, so a runtime can execute an agent that no longer
+matches the one under `extensions/` while every command still appears to work.
+
 ## Maintenance Rule
 
 After every Source of Truth change:
 
 1. Update runtime.
-2. Validate runtime alignment.
+2. Validate runtime alignment by comparing content, not by inspection.
 3. Execute governance validation.
 4. Execute smoke test.
+
+Comparing content means a hash of each file on both sides, computed after
+normalizing line endings and trailing newlines. A file that looks right in an
+editor and differs by one character is the failure mode this step exists to
+catch.
 
 ---
 
@@ -229,6 +246,47 @@ Required validation:
 Architecture review
 Governance review
 Full workflow validation
+```
+
+---
+
+## Type 5 - Skill Change
+
+Examples:
+
+- A new PBI source adapter.
+- Changes to `SKILL.md`, to a reference document or to a script.
+- Changes to the shared scripts under `skills/_shared/scripts/`.
+
+A skill is a directory under `extensions/grm-corporate-workflow/skills/`
+containing `SKILL.md`, optional `references/` and optional `scripts/`. A skill
+that is not listed under `skills:` in `extension.yml` does not exist as far as
+the framework is concerned.
+
+`_shared` is not a skill. It is a script library invoked by skills and by
+agents, and it is deliberately absent from `extension.yml`.
+
+Architectural invariant: a skill never writes `.specify/memory/active-pbi.md`,
+`.specify/feature.json` or anything under `features/`. Those artifacts are
+written and verified by the shared scripts, which is the whole reason the
+library exists. A new skill retrieves and reports; it does not author, repair or
+normalize the artifacts it feeds.
+
+Lifecycle of a new skill:
+
+1. Create the directory and `SKILL.md` under the Source of Truth.
+2. Add reference documents and scripts. Scripts are ASCII only, target Windows
+   PowerShell 5.1, and are parsed before use.
+3. Declare the skill under `skills:` in `extension.yml`.
+4. Synchronize the runtime and verify by content.
+5. Exercise the skill end to end against a real source.
+
+Required validation:
+
+```text
+Runtime synchronization
+Content verification of every skill file
+End-to-end validation against a real source
 ```
 
 ---
@@ -322,15 +380,26 @@ presets/
 
 ## Step 2
 
-Update corresponding runtime assets.
+Update the corresponding runtime assets under `.github/`, by class:
 
 ```text
-.github/
+skills/            mirrored as a subtree
+agents/            copied file by file
+prompts/           copied file by file
 ```
+
+Only `skills/` has tooling. A local helper script exists for that subtree, but
+it is not versioned with the framework, so it cannot be assumed present after a
+clone. Copying by hand and verifying afterwards is the procedure of record;
+tooling is an optimization on top of it, never a substitute for the check.
 
 ## Step 3
 
-Verify alignment.
+Verify alignment by comparing content.
+
+For every file touched, compute a hash on both sides after normalizing line
+endings and trailing newlines, and compare. Reading the file and judging it
+aligned is not verification.
 
 Minimum validation:
 
@@ -338,6 +407,7 @@ Minimum validation:
 Command availability
 Prompt alignment
 Agent alignment
+Skill alignment
 Governance alignment
 ```
 
@@ -472,6 +542,22 @@ Classify debt:
 
 Track debt through follow-up PBIs.
 
+## Framework Debt
+
+Debt in the framework itself does not belong in any `delivery-doc.md`. Record it
+here, named, so that it survives the session that found it.
+
+Currently open:
+
+- The runtime synchronization helper for `skills/` is not versioned with the
+  framework, and the usage example inside the script itself shows an invocation
+  form that does not work.
+- `Get-DepthProfile` is defined twice across the shared scripts. Both copies
+  behave identically today, which is exactly what makes a future divergence
+  hard to notice.
+- `.github/skills/` is versioned in part: it carries the shared scripts needed
+  to run corporate commands in this repository, but not the skills themselves.
+
 ---
 
 # 16. Maintenance Risks
@@ -480,9 +566,14 @@ Track debt through follow-up PBIs.
 
 Source of Truth and Runtime diverge.
 
+This has occurred. Tooling covered `skills/` only, agent changes never reached
+the runtime, and the divergence surfaced as inconsistent behavior during
+testing rather than as a synchronization error.
+
 Mitigation:
 
-Mandatory synchronization validation.
+Mandatory synchronization validation, by content comparison, covering every
+class of runtime asset and not only the ones with tooling.
 
 ## Risk 2
 

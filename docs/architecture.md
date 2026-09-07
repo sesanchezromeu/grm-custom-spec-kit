@@ -133,6 +133,46 @@ Benefits:
 
 ---
 
+## AP05 - Three-Link Skill Model
+
+Corporate capabilities delivered as Agent Skills follow a fixed chain of three
+links. Each link has a distinct nature of invocation and must not absorb the
+responsibilities of the others.
+
+```text
+agent (authority)  ->  hook (deterministic engagement)  ->  skill (capability)
+```
+
+| Link | Artifact | Invocation nature | Contains |
+|---|---|---|---|
+| Authority | `*.agent.md` | Deterministic: user or `workflow.yml` | Governance, gates, prohibitions, output contract |
+| Engagement | `.specify/extensions.yml` | Deterministic: dispatched by the native agent | Registry of mandatory and optional hooks |
+| Capability | `SKILL.md` | Explicit from the agent, or by description match | Procedure, connection, format, assets |
+
+### Governing principle
+
+> The skill never decides, it only knows how to do. The agent never executes a
+> reusable procedure, it only requires it.
+
+Corollaries:
+
+- No governance rule, prohibition or gate criterion lives inside a `SKILL.md`.
+- No skill determines whether a workflow phase may proceed.
+- No skill writes `active-pbi.md`, `feature.json` or delivery artifacts. A
+  skill produces content; the agent writes it.
+
+### Relation to AP03 and to GS-01
+
+The full skills subtree deploys to the runtime regardless of which individual
+skills are declared under `extension.yml:skills` (see the runtime
+synchronization tooling under `resources/tools/`). This does not conflict with
+GS-01: GS-01 governs which declared skills are loadable, not whether
+undeclared content physically exists on disk. A skill still only activates
+when the agent explicitly names it or its description matches, and an
+undeclared skill is never named by any agent.
+
+---
+
 # 3. Reference Architecture
 
 ```text
@@ -388,6 +428,22 @@ Objectives:
 - Capture technical debt.
 - Capture validation gaps.
 - Improve future PBIs.
+
+## D07 - Spec Kit Skills Mode Discarded (D-01)
+
+Spec Kit documentation states that migration to the skills-mode layout is
+rejected when preset overrides are installed, because preset artifacts cannot
+yet be reconciled through a layout change. The `grm-corporate-governance`
+preset overrides three agents (`speckit.specify`, `speckit.clarify`,
+`speckit.plan`), so Spec Kit's own skills mode is incompatible with the GRM
+customization as designed.
+
+This is a Spec Kit incompatibility, not a GRM one. It is recorded here as an
+architectural constraint so the option is not reopened without checking
+whether the constraint still holds. It may be revisited if Spec Kit resolves
+preset reconciliation for the skills-mode layout.
+
+Referenced externally as D-01 in `GRM-SCK_Propuesta_Skills_v1.md`.
 
 ---
 

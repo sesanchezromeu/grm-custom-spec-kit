@@ -206,6 +206,50 @@ features/<feature>/delivery-doc.md
 | speckit.specify | Blocked |
 | speckit.clarify | Blocked |
 
+## 8.1 Skill Governance Matrix
+
+A skill is loadable content injected into an agent's context. An unreviewed
+skill changes agent behaviour without crossing any gate, which makes skills a
+governance surface that the command matrix above does not cover. The following
+norms apply to every skill in the Customization Source of Truth.
+
+**GS-01 - Controlled origin.**
+Only skills declared under `extension.yml:skills` are deployed to the runtime.
+A skill present in the Source of Truth but not declared is not installed.
+
+**GS-02 - No embedded governance.**
+No skill contains governance rules, prohibitions or gate criteria. Breaching
+this is grounds for rejection at review.
+
+**GS-03 - No state writes.**
+No skill writes `.specify/memory/active-pbi.md`, `.specify/feature.json` or
+artifacts under `features/`. A skill produces content; the agent persists it.
+
+**GS-04 - Third-party skills.**
+Externally sourced skills are not incorporated into the GRM Source of Truth
+without explicit review and adoption. Automatic discovery of third-party
+directories such as `.claude/skills` or `~/.copilot/skills` falls outside
+corporate control and must be flagged in the installation documentation.
+
+**GS-05 - Traceability.**
+Each skill declares in its own body which commands consume it and under which
+invocation mechanism. The inverse relation is recorded in the table below.
+
+**GS-06 - Shape validation.**
+The installer validates the frontmatter of every deployed skill: `name` and
+`description` present, `name` matching the directory name, and maximum
+lengths respected. A breach stops the installation.
+
+### Skill to consumer relation (GS-05)
+
+| Skill | Consuming command | Invocation mechanism |
+|----------|------------------|------------------|
+| grm-pbi-source-markdown | corp.load | Explicit dispatch on `--file` |
+| grm-azure-devops-pbi | corp.load | Explicit dispatch on `--backlog` |
+
+Dispatch is deterministic by flag and is declared in the agent, not in the
+skill. Neither skill decides whether it applies.
+
 ---
 
 # 9. Why speckit.specify Is Blocked

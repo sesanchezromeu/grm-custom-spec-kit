@@ -255,6 +255,85 @@ function Install-CorporateAgentsAndPrompts {
     }
 }
 
+function Install-CorporateSkills {
+    # Despliega el subarbol de skills corporativas en el runtime, que es
+    # donde el agente las descubre. Copy-DirectoryMerge ya lleva la
+    # extension entera a extensions/, pero .github/skills/ quedaba vacio.
+    #
+    # El manifiesto es puerta, no inventario (D-P19-10, D-P19-11): toda
+    # skill declarada debe existir con su SKILL.md ANTES de copiar nada,
+    # y lo que se copia es el subarbol completo, incluidas las carpetas
+    # que no se declaran.
+    #
+    # skills/_shared es una de ellas (D-P19-01). No es una skill, no se
+    # declara y no lleva SKILL.md, pero los dos SKILL.md invocan sus
+    # scripts por ruta del runtime. Sin el, el primer corp.erase falla.
+    #
+    # Sin purga (D-P19-12): copia y sobrescribe, nunca borra. Es
+    # deliberadamente menos agresiva que resources/tools/Sync-GrmSkills.ps1,
+    # que espeja con robocopy /MIR sobre un runtime desechable. Aqui el
+    # destino puede contener skills anadidas por el proyecto consumidor,
+    # y la politica del instalador es no destruir .github.
+    #
+    # Una entrada por fichero en $Deployed (D-P19-09), de modo que
+    # Assert-DeployedProvenance compara la huella SHA-256 de origen y
+    # destino. La verificacion no es nueva: es la que ya cubre agentes y
+    # prompts.
+    param(
+        [string]$SourceRepoPath,
+        [string]$TargetPath,
+        [System.Collections.Generic.List[string]]$Deployed
+    )
+
+    $extYml     = Join-Path $SourceRepoPath "extensions/grm-corporate-workflow/extension.yml"
+    $skillsFrom = Join-Path $SourceRepoPath "extensions/grm-corporate-workflow/skills"
+
+    if (-not (Test-Path $skillsFrom)) {
+        throw "Skills subtree not found in Source of Truth: $skillsFrom"
+    }
+
+    # 1. Puerta previa sobre el conjunto completo. Falla antes de copiar,
+    #    para no dejar el runtime a medio desplegar.
+    $skills = @(Read-YamlStringList -Path $extYml -TopKey "skills")
+    $missingSkills = [System.Collections.Generic.List[string]]::new()
+    foreach ($skill in $skills) {
+        $skillDir = Join-Path $skillsFrom $skill
+        if (-not (Test-Path $skillDir)) {
+            $missingSkills.Add($skill) | Out-Null
+            continue
+        }
+        if (-not (Test-Path (Join-Path $skillDir "SKILL.md"))) {
+            $missingSkills.Add("$skill (missing SKILL.md)") | Out-Null
+        }
+    }
+    if ($missingSkills.Count -gt 0) {
+        throw "Declared skills not found or incomplete in Source of Truth: $($missingSkills -join ', '). Nothing was copied."
+    }
+
+    # 2. Despliegue del subarbol completo, fichero a fichero.
+    #    El prefijo y los ficheros tienen que venir del mismo proveedor.
+    #    Resolve-Path conserva la forma corta 8.3 que se le pasa, mientras
+    #    que FullName de Get-ChildItem devuelve la forma larga expandida.
+    #    Restar longitudes entre las dos formas descuadra la ruta relativa:
+    #    medido, C:\Users\SESANC~1\... son 51 caracteres y
+    #    C:\Users\sesanchez\... son 52 para el mismo directorio.
+    #    La comprobacion de prefijo convierte esa clase de error en un fallo
+    #    duro en lugar de en una ruta silenciosamente mal formada.
+    $skillsRoot = (Get-Item -LiteralPath $skillsFrom).FullName.TrimEnd('\')
+    $prefix     = $skillsRoot + '\'
+    $files      = @(Get-ChildItem -LiteralPath $skillsRoot -Recurse -File -Force)
+    foreach ($file in $files) {
+        if (-not $file.FullName.StartsWith($prefix, [System.StringComparison]::OrdinalIgnoreCase)) {
+            throw "File outside the skills subtree: $($file.FullName) (expected prefix: $prefix)"
+        }
+        $relative = $file.FullName.Substring($prefix.Length)
+        $skillTo  = Join-Path $TargetPath (".github/skills/" + $relative)
+        Copy-ManifestFile -From $file.FullName -To $skillTo -Label "corp skill file: $relative" -Deployed $Deployed | Out-Null
+    }
+
+    Write-Ok "Corporate skills deployed: $($skills.Count) declared skill(s), $($files.Count) file(s)"
+}
+
 function Get-NativePreservedFiles {
     # Resuelve las rutas de fichero (agent + prompt) para cada clave
     # declarada en native_preserved. Opcion A: agent + prompt.
@@ -1001,6 +1080,9 @@ try {
     $agentsTo = Join-Path $TargetPath ".github/agents"
     $promptsTo = Join-Path $TargetPath ".github/prompts"
     Install-CorporateAgentsAndPrompts -SourceRepoPath $SourceRepoPath -TargetPath $TargetPath -Deployed $DeployedArtifacts
+
+    Write-Step "Deploy corporate skills (manifest-gated, full subtree)"
+    Install-CorporateSkills -SourceRepoPath $SourceRepoPath -TargetPath $TargetPath -Deployed $DeployedArtifacts
 
     Write-Step "Verify native preserved artifacts are intact"
     $NativeHashAfter = Get-FileHashSnapshot -Files $NativePreservedFiles

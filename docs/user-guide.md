@@ -393,6 +393,7 @@ backlogs:
     organization_url: https://dev.azure.com/<organization>
     project: <project>
 ```
+Add `.specify/grm-backlog.yml` to the consuming project's own `.gitignore`. The installer never edits a project's `.gitignore`: this is the operator's step, done once per project.
 
 Keys are chosen by the project. There is no default backlog by design: a reference that does not name its backlog can resolve silently against the wrong one.
 

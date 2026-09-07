@@ -981,6 +981,7 @@ function New-InstallationReport {
         [bool]$SamplesCopied,
         [bool]$DocsCopied,
         [bool]$ConstitutionCopied,
+        [bool]$BacklogCatalogCopied,
         [string[]]$Missing,
         [string[]]$DeployedArtifacts,
         [string[]]$PreservedArtifacts,
@@ -1069,6 +1070,7 @@ $undeployedLines
 | samples | $SamplesCopied |
 | docs | $DocsCopied |
 | constitution | $ConstitutionCopied |
+| backlog catalogue template | $BacklogCatalogCopied |
 
 ## Missing Items
 
@@ -1110,6 +1112,7 @@ $WorkflowEntries = @()
 $SamplesCopied = $false
 $DocsCopied = $false
 $ConstitutionCopied = $false
+$BacklogCatalogCopied = $false
 $GitVersion = "unknown"
 $SpecKitVersion = "unknown"
 $SpecKitInitCommandForReport = "specify init --here --integration $Integration --script $ScriptType --force"
@@ -1233,6 +1236,15 @@ try {
     $constitutionTarget = Join-Path $TargetPath ".specify/memory/constitution.md"
     $ConstitutionCopied = Copy-FileIfExists -From $constitutionSource -To $constitutionTarget -Label "GRM corporate constitution" -Warnings $Warnings
 
+    # P4: plantilla de catalogo de backlog. Solo el ejemplo se copia, y
+    # se sobrescribe siempre (D-P20-07): es nuestra plantilla, no
+    # configuracion del consumidor. grm-backlog.yml (sin sufijo) nunca
+    # se toca desde aqui, asi que no hay riesgo de pisar la
+    # configuracion real del proyecto consumidor.
+    $backlogCatalogSource = Join-Path $SourceRepoPath "extensions/grm-corporate-workflow/config/grm-backlog.example.yml"
+    $backlogCatalogTarget = Join-Path $TargetPath ".specify/grm-backlog.example.yml"
+    $BacklogCatalogCopied = Copy-FileIfExists -From $backlogCatalogSource -To $backlogCatalogTarget -Label "GRM backlog catalogue template" -Warnings $Warnings
+
     Write-Step "Validate installed runtime"
     $requiredPaths = @(
         ".github/agents",
@@ -1319,6 +1331,7 @@ finally {
                 -SamplesCopied:$SamplesCopied `
                 -DocsCopied:$DocsCopied `
                 -ConstitutionCopied:$ConstitutionCopied `
+                -BacklogCatalogCopied:$BacklogCatalogCopied `
                 -Missing $Missing `
                 -DeployedArtifacts $DeployedArtifacts `
                 -PreservedArtifacts $PreservedArtifacts `

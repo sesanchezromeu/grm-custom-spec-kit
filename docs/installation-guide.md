@@ -432,7 +432,22 @@ Expected runtime path:
 
 The constitution must reflect the approved GRM governance model for the target release.
 
-### Step 10 - Validate Installation
+### Step 10 - Install Backlog Catalog Template
+
+Deploy the backlog catalogue template:
+
+.specify/grm-backlog.example.yml
+
+This is a template supplied by GRM, always overwritten on install. It is not
+the project's own configuration: `.specify/grm-backlog.yml` (no `.example`
+suffix) is never created, copied or overwritten by the installer.
+
+Filling in the template, choosing backlog keys, setting `AZDO_PAT` and adding
+`.specify/grm-backlog.yml` to the project's `.gitignore` are operator steps,
+done once per project after installation. See "Backlog Catalogue" and
+"Personal Access Token" in `docs/user-guide.md`.
+
+### Step 11 - Validate Installation
 
 After all assets are copied and synchronized, execute the validation checklist described later in this guide.
 

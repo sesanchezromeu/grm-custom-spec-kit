@@ -956,8 +956,6 @@ function Install-GrmWorkflows {
     return $detectedWorkflowEntries
 }
 
-
-
 function New-InstallationReport {
     param(
         [string]$ReportPath,

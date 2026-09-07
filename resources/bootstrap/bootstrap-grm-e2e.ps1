@@ -255,6 +255,129 @@ function Install-CorporateAgentsAndPrompts {
     }
 }
 
+function Read-SkillFrontmatter {
+    # Extrae el bloque de frontmatter de un SKILL.md: desde la primera
+    # linea, que debe ser exactamente '---', hasta la siguiente linea
+    # que sea tambien exactamente '---'. Sin cierre, no hay frontmatter
+    # que leer (D-P20-02): el llamador lo trata como fallo de forma.
+    #
+    # Dentro del bloque, pares clave: valor planos, un nivel, sin
+    # anidar. No reutiliza Read-YamlScalar: un frontmatter no tiene
+    # TopKey/NestedKey, name y description estan al mismo nivel, y
+    # Read-YamlScalar lee el fichero completo sin acotar donde termina
+    # el YAML, lo que arriesga capturar texto del cuerpo Markdown.
+    #
+    # No soporta valores plegados en varias lineas (estilo '>' o '|').
+    # El corpus actual no los usa; si aparecen, esta funcion los trata
+    # como valor vacio y Assert-SkillShape lo reporta como campo
+    # ausente, nunca como exito silencioso.
+    param(
+        [string]$Path
+    )
+
+    $result = @{}
+    if (-not (Test-Path $Path)) { return $result }
+
+    $lines = @(Get-Content -Path $Path)
+    if ($lines.Count -eq 0 -or $lines[0].Trim() -ne '---') {
+        return $result
+    }
+
+    $closeIndex = -1
+    for ($i = 1; $i -lt $lines.Count; $i++) {
+        if ($lines[$i].Trim() -eq '---') {
+            $closeIndex = $i
+            break
+        }
+    }
+    if ($closeIndex -lt 0) {
+        return $result
+    }
+
+    for ($i = 1; $i -lt $closeIndex; $i++) {
+        $line = $lines[$i]
+        if ($line -match '^\s*#') { continue }
+        if ([string]::IsNullOrWhiteSpace($line)) { continue }
+        if ($line -match '^([A-Za-z0-9_]+):\s*(.*)$') {
+            $key = $Matches[1]
+            $val = $Matches[2].Trim()
+            $val = $val.Trim('"').Trim("'")
+            $result[$key] = $val
+        }
+    }
+
+    return $result
+}
+
+function Assert-SkillShape {
+    # P3 (D-P19-02, D-P20-01b, D-P20-03b, D-P20-04): valida la forma de
+    # toda skill desplegable en la Source of Truth, declarada o no en
+    # el manifiesto.
+    #
+    # Se ejecuta sobre el subarbol de origen, antes de copiar nada,
+    # igual que la puerta de existencia de Install-CorporateSkills.
+    # Ambas puertas conviven: la de existencia cubre las skills
+    # declaradas en extension.yml; esta cubre todo directorio de primer
+    # nivel que tenga SKILL.md, declarado o no, porque el subarbol
+    # completo se despliega igual (D-P19-10).
+    #
+    # _shared queda fuera sin excepcion explicita: no tiene SKILL.md
+    # (D-P19-01), asi que nunca entra en el bucle.
+    #
+    # Un directorio sin SKILL.md no es un incumplimiento aqui: nadie
+    # prometio que fuera una skill. Es criterio de inclusion, no una
+    # regla que pueda fallar.
+    #
+    # Todos los incumplimientos se acumulan y se lanzan juntos, para no
+    # obligar a corregir y reinstalar seis veces (mismo patron que la
+    # puerta de existencia).
+    param(
+        [string]$SkillsFrom
+    )
+
+    $nameSyntax = '^[a-z0-9]+(-[a-z0-9]+)*$'
+    $problems = [System.Collections.Generic.List[string]]::new()
+
+    $skillDirs = @(Get-ChildItem -LiteralPath $SkillsFrom -Directory -Force)
+    foreach ($dir in $skillDirs) {
+        $skillMd = Join-Path $dir.FullName "SKILL.md"
+        if (-not (Test-Path $skillMd)) {
+            continue
+        }
+
+        $front = Read-SkillFrontmatter -Path $skillMd
+        if ($front.Count -eq 0) {
+            $problems.Add("$($dir.Name): frontmatter not parseable (missing or unclosed '---' block)") | Out-Null
+            continue
+        }
+
+        $name = $front['name']
+        $description = $front['description']
+
+        if ([string]::IsNullOrWhiteSpace($name)) {
+            $problems.Add("$($dir.Name): missing 'name' in frontmatter") | Out-Null
+        }
+        if ([string]::IsNullOrWhiteSpace($description)) {
+            $problems.Add("$($dir.Name): missing 'description' in frontmatter") | Out-Null
+        }
+        if (-not [string]::IsNullOrWhiteSpace($name)) {
+            if ($name -cne $dir.Name) {
+                $problems.Add("$($dir.Name): 'name' ('$name') does not match directory name") | Out-Null
+            }
+            if ($name -cnotmatch $nameSyntax -or $name.Length -gt 64) {
+                $problems.Add("$($dir.Name): 'name' ('$name') must be lowercase-with-hyphens, up to 64 characters") | Out-Null
+            }
+        }
+        if (-not [string]::IsNullOrWhiteSpace($description) -and $description.Length -gt 1024) {
+            $problems.Add("$($dir.Name): 'description' exceeds 1024 characters ($($description.Length))") | Out-Null
+        }
+    }
+
+    if ($problems.Count -gt 0) {
+        throw "Skill shape validation failed: $($problems -join '; ')"
+    }
+}
+
 function Install-CorporateSkills {
     # Despliega el subarbol de skills corporativas en el runtime, que es
     # donde el agente las descubre. Copy-DirectoryMerge ya lleva la
@@ -264,6 +387,11 @@ function Install-CorporateSkills {
     # skill declarada debe existir con su SKILL.md ANTES de copiar nada,
     # y lo que se copia es el subarbol completo, incluidas las carpetas
     # que no se declaran.
+    #
+    # Segunda puerta, tambien previa a copiar (P3): Assert-SkillShape
+    # valida la forma de todo directorio con SKILL.md, declarado o no.
+    # Existencia y forma son preguntas distintas y se comprueban por
+    # separado; ver Assert-SkillShape para el detalle de las reglas.
     #
     # skills/_shared es una de ellas (D-P19-01). No es una skill, no se
     # declara y no lleva SKILL.md, pero los dos SKILL.md invocan sus
@@ -309,6 +437,11 @@ function Install-CorporateSkills {
     if ($missingSkills.Count -gt 0) {
         throw "Declared skills not found or incomplete in Source of Truth: $($missingSkills -join ', '). Nothing was copied."
     }
+
+    # 1b. Validacion de forma (P3, D-P20-01b): todo directorio de primer
+    #     nivel de la Source of Truth que tenga SKILL.md, declarado o no.
+    #     Ver Assert-SkillShape. Tambien corta antes de copiar nada.
+    Assert-SkillShape -SkillsFrom $skillsFrom
 
     # 2. Despliegue del subarbol completo, fichero a fichero.
     #    El prefijo y los ficheros tienen que venir del mismo proveedor.
@@ -822,6 +955,8 @@ function Install-GrmWorkflows {
     Write-Ok "GRM workflows installed and workflow registry merged"
     return $detectedWorkflowEntries
 }
+
+
 
 function New-InstallationReport {
     param(

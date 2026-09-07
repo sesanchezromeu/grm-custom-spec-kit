@@ -53,7 +53,6 @@ This release makes the PBI source pluggable and moves the guarantee that the loa
 
 - Comments, child work items, attachments and artifact links are not loaded from a work item. Their presence is reported.
 - A work item without a description, or without acceptance criteria, is rejected. It is never loaded partially.
-- The runtime synchronization helper for `skills/` is not versioned with the framework.
 
 ### Compatibility
 

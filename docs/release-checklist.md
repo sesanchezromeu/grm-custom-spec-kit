@@ -282,6 +282,8 @@ Checklist:
 
 - [ ] Version assigned
 - [ ] CHANGELOG updated
+- [ ] Known Limitations checked against the current state, and any entry
+      resolved during this version removed
 - [ ] Release scope agreed
 - [ ] Release notes prepared
 

@@ -436,7 +436,9 @@ The constitution must reflect the approved GRM governance model for the target r
 
 Deploy the backlog catalogue template:
 
+```text
 .specify/grm-backlog.example.yml
+```
 
 This is a template supplied by GRM, always overwritten on install. It is not
 the project's own configuration: `.specify/grm-backlog.yml` (no `.example`
@@ -509,6 +511,7 @@ Run this checklist after installation.
 | `docs/` exists | Yes |
 | `samples/` exists | Yes |
 | `docs/sessions/` absent from installed workspace | Yes |
+| `.specify/grm-backlog.example.yml` exists | Yes |
 
 ### 10.2 Documentation Files
 

@@ -388,9 +388,9 @@ agents/            copied file by file
 prompts/           copied file by file
 ```
 
-Only `skills/` has tooling. A local helper script exists for that subtree, but
-it is not versioned with the framework, so it cannot be assumed present after a
-clone. Copying by hand and verifying afterwards is the procedure of record;
+Only `skills/` has tooling. `resources/tools/Sync-GrmSkills.ps1` covers that
+subtree and is versioned with the framework, so it is present after a clone.
+Copying by hand and verifying afterwards remains the procedure of record;
 tooling is an optimization on top of it, never a substitute for the check.
 
 ## Step 3
@@ -549,12 +549,32 @@ here, named, so that it survives the session that found it.
 
 Currently open:
 
-- The runtime synchronization helper for `skills/` is not versioned with the
-  framework, and the usage example inside the script itself shows an invocation
-  form that does not work.
-- `Get-DepthProfile` is defined twice across the shared scripts. Both copies
-  behave identically today, which is exactly what makes a future divergence
-  hard to notice.
+- The usage example inside `resources/tools/Sync-GrmSkills.ps1` spreads the
+  invocation across several lines with backtick continuation, departing from
+  the project convention of a single unbroken line. The example has not been
+  observed to fail, and the continuation is valid PowerShell; the concern is
+  that copy-pasting a continued line is fragile across terminals, which is
+  why the convention exists.
+- The installation report has no documented format contract. `docs/` states
+  that `installation-report.md` is generated but never describes its sections,
+  so the report can change shape without anything detecting the drift.
+- `Assert-DeployedProvenance` silently skips deployed-artifact entries with
+  fewer than three fields, while `Assert-DeployedSourcePrefix` reports them.
+  A malformed entry is therefore verified by one guard and ignored by the
+  other, and the asymmetry is not visible from either function alone.
+- The installation guide does not warn about automatic discovery of
+  third-party skill directories such as `.claude/skills` or
+  `~/.copilot/skills`, which GS-04 in the Governance Guide requires it to do.
+
+Recently closed, kept here briefly so the correction is traceable:
+
+- The runtime synchronization helper for `skills/` is now versioned with the
+  framework at `resources/tools/Sync-GrmSkills.ps1`.
+- `Get-DepthProfile` was recorded as duplicated across the shared scripts.
+  The two definitions are the Source of Truth copy and its runtime mirror of
+  the same file, which is the intended AP03 duplication, verified identical
+  and covered by the installer's hash comparison. There was no divergence
+  risk of the kind the entry described.
 
 ---
 

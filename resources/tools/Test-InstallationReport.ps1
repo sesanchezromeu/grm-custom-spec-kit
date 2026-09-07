@@ -16,6 +16,10 @@
 
     Cobertura actual:
       P5a  Assert-DeployedSourcePrefix (OBS-P2a-01)
+      P5b  New-InstallationReport, subseccion ### Skills (D-P21-01c,
+           D-P21-03a, D-P21-04) y regresion de Assert-SkillShape
+           (D-P21-08: sigue lanzando en camino de fallo, y en exito
+           devuelve los directorios validados)
 
     Uso:
       powershell -NoProfile -ExecutionPolicy Bypass -File resources\tools\Test-InstallationReport.ps1
@@ -37,7 +41,7 @@ $resolvedBootstrap = (Resolve-Path -LiteralPath $BootstrapPath).ProviderPath
 $tokens = $null
 $ast = [System.Management.Automation.Language.Parser]::ParseFile($resolvedBootstrap, [ref]$tokens, [ref]$null)
 
-$targetFunctions = @("Assert-DeployedSourcePrefix")
+$targetFunctions = @("Assert-DeployedSourcePrefix", "Assert-SkillShape", "Read-SkillFrontmatter", "New-InstallationReport")
 $found = @{}
 
 foreach ($fn in $ast.FindAll({ param($node) $node -is [System.Management.Automation.Language.FunctionDefinitionAst] }, $true)) {
@@ -131,6 +135,140 @@ function Invoke-Scenario {
     }
 }
 
+# --- Helpers P5b: regresion de Assert-SkillShape y estados de
+#     New-InstallationReport ---
+
+function Invoke-SkillShapeScenario {
+    # Regresion de P3 (D-P19-02 y siguientes): confirma que anadir el
+    # "return $validatedDirs" en el camino de exito no toca el camino
+    # de fallo, y que el camino de exito ahora devuelve el nombre del
+    # directorio que supero las seis reglas.
+    param(
+        [string]$Name,
+        [string]$SkillsFrom,
+        [bool]$ExpectThrow,
+        [string[]]$ExpectedReturnedDirs = @()
+    )
+    $script:ScenarioCount++
+
+    $threw = $false
+    $returned = @()
+    try {
+        $returned = @(Assert-SkillShape -SkillsFrom $SkillsFrom)
+    } catch {
+        $threw = $true
+    }
+
+    $ok = $true
+    $reason = ""
+    if ($threw -ne $ExpectThrow) {
+        $ok = $false
+        $reason = "se esperaba throw=$ExpectThrow y se obtuvo throw=$threw"
+    }
+    if ($ok -and -not $ExpectThrow) {
+        $missingExpected = @($ExpectedReturnedDirs | Where-Object { $returned -notcontains $_ })
+        $extra = @($returned | Where-Object { $ExpectedReturnedDirs -notcontains $_ })
+        if ($missingExpected.Count -gt 0 -or $extra.Count -gt 0) {
+            $ok = $false
+            $reason = "devueltos ($($returned -join ', ')) no coincide con esperado ($($ExpectedReturnedDirs -join ', '))"
+        }
+    }
+
+    if ($ok) {
+        Write-Host "PASS  $Name"
+    } else {
+        Write-Host "FAIL  $Name -- $reason"
+        $script:Failures++
+    }
+}
+
+function Invoke-ReportSkillsScenario {
+    # Ejercita New-InstallationReport de verdad -mismo cmdlet
+    # Set-Content, mismo here-string- contra un fichero temporal, y lee
+    # de vuelta la subseccion ### Skills. No reimplementa la logica de
+    # agrupacion: si esta prueba pasa, es porque el codigo del
+    # instalador la produjo asi, no porque el arnes la calculo por su
+    # cuenta.
+    #
+    # La comparacion de lineas se hace como conjunto (ambos lados
+    # ordenados) para no acoplar la prueba a la cultura de ordenacion
+    # de Sort-Object en la maquina donde corra.
+    param(
+        [string]$Name,
+        [System.Collections.Generic.List[string]]$Deployed,
+        [bool]$SkillsShapeValidated,
+        [string[]]$ValidatedSkillDirs,
+        [string[]]$ExpectedLines
+    )
+    $script:ScenarioCount++
+    $reportPath = Join-Path $env:TEMP ("gsck-report-scenario-" + [guid]::NewGuid().ToString("N") + ".md")
+
+    try {
+        New-InstallationReport `
+            -ReportPath $reportPath `
+            -Status "SUCCESS" `
+            -ErrorMessage "" `
+            -StartTime (Get-Date) `
+            -EndTime (Get-Date) `
+            -RootPath "C:\dev\e2e" `
+            -TargetPath "C:\dev\e2e" `
+            -InstallMode "clean" `
+            -EffectiveMode "clean" `
+            -GitVersion "git version 2.44.0" `
+            -SpecKitVersion "0.9.0" `
+            -SpecKitInitCommandForReport "uvx --from git+https://github.com/github/spec-kit.git specify init" `
+            -InstalledRemote "https://github.com/sesanchezromeu/grm-custom-spec-kit.git" `
+            -InstalledBranch "main" `
+            -InstalledCommit "70079f70be0711af4175bf3204be1fb505a6ec9c" `
+            -SourceRepoPath "C:\Users\sesanchez\AppData\Local\Temp\grm-custom-spec-kit-cache\source" `
+            -KeepSourceCache:$false `
+            -AgentFiles @() `
+            -PromptFiles @() `
+            -WorkflowEntries @() `
+            -SamplesCopied:$false `
+            -DocsCopied:$false `
+            -ConstitutionCopied:$false `
+            -BacklogCatalogCopied:$false `
+            -Missing @() `
+            -DeployedArtifacts $Deployed `
+            -PreservedArtifacts @() `
+            -UndeployedArtifacts @() `
+            -SkillsShapeValidated:$SkillsShapeValidated `
+            -ValidatedSkillDirs $ValidatedSkillDirs `
+            -Warnings ([System.Collections.Generic.List[string]]::new())
+
+        $content = Get-Content -LiteralPath $reportPath -Raw
+        $sectionText = $null
+        if ($content -match '(?ms)^### Skills\r?\n\r?\n(.*?)\r?\n\r?\n### Workflows') {
+            $sectionText = $matches[1]
+        }
+
+        $actualLines = @()
+        if ($sectionText) {
+            $actualLines = @($sectionText -split "`n" | ForEach-Object { $_.Trim() } | Where-Object { $_ -ne "" })
+        }
+
+        $actualSorted = @($actualLines | Sort-Object)
+        $expectedSorted = @($ExpectedLines | Sort-Object)
+
+        $ok = ($actualSorted.Count -eq $expectedSorted.Count)
+        if ($ok) {
+            for ($i = 0; $i -lt $actualSorted.Count; $i++) {
+                if ($actualSorted[$i] -ne $expectedSorted[$i]) { $ok = $false; break }
+            }
+        }
+
+        if ($ok) {
+            Write-Host "PASS  $Name"
+        } else {
+            Write-Host "FAIL  $Name -- seccion real: [$($actualLines -join ' | ')] -- esperada: [$($ExpectedLines -join ' | ')]"
+            $script:Failures++
+        }
+    } finally {
+        if (Test-Path -LiteralPath $reportPath) { Remove-Item -LiteralPath $reportPath -Force }
+    }
+}
+
 # --- Escenarios ---
 
 $long  = "C:\Users\sesanchez\AppData\Local\Temp\grm-custom-spec-kit-cache\source"
@@ -199,6 +337,95 @@ Invoke-Scenario -Name "lista-vacia" -SourceRepoPath $long -ExpectedNewCount 0 -D
 Invoke-Scenario -Name "preserva-missing-preexistente" -SourceRepoPath $long -ExpectedNewCount 1 -ExpectedSubstring "source-prefix-mismatch" -PreexistingMissing @("provenance-mismatch: C:\dev\e2e\.github\agents\corp.doc.agent.md", ".specify/workflows") -Deployed (New-DeployedList @(
     "corp prompt: corp.load|$short\extensions\grm-corporate-workflow\prompts\corp.load.prompt.md|C:\dev\e2e\.github\prompts\corp.load.prompt.md"
 ))
+
+# --- P5b: regresion de Assert-SkillShape ---
+
+$skillShapePosRoot = Join-Path $env:TEMP ("gsck-skillshape-pos-" + [guid]::NewGuid().ToString("N"))
+$skillShapeNegRoot = Join-Path $env:TEMP ("gsck-skillshape-neg-" + [guid]::NewGuid().ToString("N"))
+
+try {
+    # 10. Camino feliz de Assert-SkillShape tras P5b: un directorio con
+    #     SKILL.md valido no solo no lanza -eso ya lo cubria P3-, ademas
+    #     devuelve su propio nombre. Fixture minima, un solo directorio,
+    #     para no repetir el corpus de Test-SkillShape.ps1.
+    New-Item -ItemType Directory -Path (Join-Path $skillShapePosRoot "valid-skill") -Force | Out-Null
+    Set-Content -LiteralPath (Join-Path $skillShapePosRoot "valid-skill\SKILL.md") -Encoding UTF8 -Value @"
+---
+name: valid-skill
+description: Fixture skill used only by the P5b harness to confirm Assert-SkillShape still returns validated directories.
+---
+# valid-skill
+"@
+    Invoke-SkillShapeScenario -Name "assert-skillshape-valida-devuelve-directorio" -SkillsFrom $skillShapePosRoot -ExpectThrow $false -ExpectedReturnedDirs @("valid-skill")
+
+    # 11. Camino de fallo de Assert-SkillShape: 'name' no coincide con
+    #     el nombre del directorio. Debe seguir lanzando exactamente
+    #     igual que en P3; el "return" nuevo es inalcanzable en esta
+    #     rama porque $problems.Count -gt 0 corta antes.
+    New-Item -ItemType Directory -Path (Join-Path $skillShapeNegRoot "broken-skill") -Force | Out-Null
+    Set-Content -LiteralPath (Join-Path $skillShapeNegRoot "broken-skill\SKILL.md") -Encoding UTF8 -Value @"
+---
+name: wrong-name
+description: Fixture skill whose name deliberately does not match its directory, to confirm the failure path still throws after P5b.
+---
+# broken-skill
+"@
+    Invoke-SkillShapeScenario -Name "assert-skillshape-invalida-sigue-lanzando" -SkillsFrom $skillShapeNegRoot -ExpectThrow $true
+}
+finally {
+    if (Test-Path -LiteralPath $skillShapePosRoot) { Remove-Item -LiteralPath $skillShapePosRoot -Recurse -Force }
+    if (Test-Path -LiteralPath $skillShapeNegRoot) { Remove-Item -LiteralPath $skillShapeNegRoot -Recurse -Force }
+}
+
+# --- P5b: los tres estados de la subseccion ### Skills (D-P21-04) ---
+
+# 12. Estado 1: validadas y desplegadas. Tres directorios en Deployed
+#     -_shared con tres ficheros y las otras dos con una y dos-, y solo
+#     dos de ellos en ValidatedSkillDirs. Comprueba a la vez el
+#     recuento por directorio, el singular/plural de "file"/"files", y
+#     que _shared se distingue como no-skill sin desaparecer.
+Invoke-ReportSkillsScenario -Name "report-skills-estado-1-validadas-y-desplegadas" `
+    -SkillsShapeValidated $true `
+    -ValidatedSkillDirs @("grm-azure-devops-pbi", "grm-pbi-source-markdown") `
+    -Deployed (New-DeployedList @(
+        "corp skill file: grm-azure-devops-pbi\SKILL.md|C:\cache\source\extensions\grm-corporate-workflow\skills\grm-azure-devops-pbi\SKILL.md|C:\dev\e2e\.github\skills\grm-azure-devops-pbi\SKILL.md",
+        "corp skill file: grm-azure-devops-pbi\scripts\Get-WorkItem.ps1|C:\cache\source\extensions\grm-corporate-workflow\skills\grm-azure-devops-pbi\scripts\Get-WorkItem.ps1|C:\dev\e2e\.github\skills\grm-azure-devops-pbi\scripts\Get-WorkItem.ps1",
+        "corp skill file: grm-pbi-source-markdown\SKILL.md|C:\cache\source\extensions\grm-corporate-workflow\skills\grm-pbi-source-markdown\SKILL.md|C:\dev\e2e\.github\skills\grm-pbi-source-markdown\SKILL.md",
+        "corp skill file: _shared\SKILL_SHARED.md|C:\cache\source\extensions\grm-corporate-workflow\skills\_shared\SKILL_SHARED.md|C:\dev\e2e\.github\skills\_shared\SKILL_SHARED.md",
+        "corp skill file: _shared\scripts\Assert-ActivePbi.ps1|C:\cache\source\extensions\grm-corporate-workflow\skills\_shared\scripts\Assert-ActivePbi.ps1|C:\dev\e2e\.github\skills\_shared\scripts\Assert-ActivePbi.ps1",
+        "corp skill file: _shared\scripts\Get-CorpConfig.ps1|C:\cache\source\extensions\grm-corporate-workflow\skills\_shared\scripts\Get-CorpConfig.ps1|C:\dev\e2e\.github\skills\_shared\scripts\Get-CorpConfig.ps1"
+    )) `
+    -ExpectedLines @(
+        "- grm-azure-devops-pbi: 2 files, shape validated",
+        "- grm-pbi-source-markdown: 1 file, shape validated",
+        "- _shared: 3 files, not a skill (no SKILL.md)"
+    )
+
+# 13. Estado 2: la validacion corrio -SkillsShapeValidated=true- pero no
+#     hay ninguna entrada "corp skill file:" en Deployed. Otras clases
+#     de entrada (agente, prompt) no deben colarse en el recuento.
+Invoke-ReportSkillsScenario -Name "report-skills-estado-2-validado-sin-skills" `
+    -SkillsShapeValidated $true `
+    -ValidatedSkillDirs @() `
+    -Deployed (New-DeployedList @(
+        "corp agent: corp.load|C:\cache\source\extensions\grm-corporate-workflow\agents\corp.load.agent.md|C:\dev\e2e\.github\agents\corp.load.agent.md"
+    )) `
+    -ExpectedLines @(
+        "- shape validated: no skill directories found in the Source of Truth"
+    )
+
+# 14. Estado 3: la ejecucion nunca llego a la validacion de forma.
+#     Deployed puede traer artefactos de otras clases -no importa-: el
+#     flag manda, no el contenido de Deployed.
+Invoke-ReportSkillsScenario -Name "report-skills-estado-3-no-ejecutado" `
+    -SkillsShapeValidated $false `
+    -ValidatedSkillDirs @() `
+    -Deployed (New-DeployedList @(
+        "corp agent: corp.load|C:\cache\source\extensions\grm-corporate-workflow\agents\corp.load.agent.md|C:\dev\e2e\.github\agents\corp.load.agent.md"
+    )) `
+    -ExpectedLines @(
+        "- shape validation not executed: installation stopped before this step"
+    )
 
 # --- Resultado ---
 

@@ -339,11 +339,13 @@ function Assert-SkillShape {
     $problems = [System.Collections.Generic.List[string]]::new()
 
     $skillDirs = @(Get-ChildItem -LiteralPath $SkillsFrom -Directory -Force)
+    $validatedDirs = [System.Collections.Generic.List[string]]::new()
     foreach ($dir in $skillDirs) {
         $skillMd = Join-Path $dir.FullName "SKILL.md"
         if (-not (Test-Path $skillMd)) {
             continue
         }
+        $validatedDirs.Add($dir.Name) | Out-Null
 
         $front = Read-SkillFrontmatter -Path $skillMd
         if ($front.Count -eq 0) {
@@ -376,6 +378,13 @@ function Assert-SkillShape {
     if ($problems.Count -gt 0) {
         throw "Skill shape validation failed: $($problems -join '; ')"
     }
+
+    # P5b (D-P21-08): en exito, devuelve los directorios de primer nivel
+    # que llegaron a tener SKILL.md y pasaron las seis reglas -no todos
+    # los de $skillDirs, que incluye tambien _shared-. Esta funcion es
+    # la unica que sabe si un directorio tenia forma de skill; el
+    # informe no vuelve a preguntarselo a nadie mas.
+    return $validatedDirs
 }
 
 function Install-CorporateSkills {
@@ -1029,6 +1038,8 @@ function New-InstallationReport {
         [string[]]$DeployedArtifacts,
         [string[]]$PreservedArtifacts,
         [string[]]$UndeployedArtifacts,
+        [bool]$SkillsShapeValidated,
+        [string[]]$ValidatedSkillDirs,
         [System.Collections.Generic.List[string]]$Warnings
     )
 
@@ -1039,6 +1050,56 @@ function New-InstallationReport {
 
     $agentLines = if ($AgentFiles.Count -gt 0) { ($AgentFiles | Sort-Object | ForEach-Object { "- $_" }) -join "`n" } else { "- none detected" }
     $promptLines = if ($PromptFiles.Count -gt 0) { ($PromptFiles | Sort-Object | ForEach-Object { "- $_" }) -join "`n" } else { "- none detected" }
+
+    # P5b (D-P21-01c, D-P21-03a, D-P21-04): la subseccion de skills no
+    # sale de una unica fuente. Assert-SkillShape es quien conoce la
+    # forma -devuelve, via Install-CorporateSkills sin cambiar su
+    # contrato, los directorios que pasaron la validacion-, y el
+    # recuento de ficheros por directorio se deriva de DeployedArtifacts,
+    # que ya es la fuente de verdad de procedencia (la misma lista que
+    # alimenta Assert-DeployedProvenance). _shared aparece aqui porque
+    # tambien despliega ficheros con la etiqueta "corp skill file:",
+    # pero nunca entra en ValidatedSkillDirs por no tener SKILL.md: se
+    # distingue, no se omite, para no contradecir el recuento de
+    # Deployed Corporate Artifacts.
+    $skillFileGroups = [ordered]@{}
+    foreach ($entry in $DeployedArtifacts) {
+        $entryParts = $entry -split '\|', 3
+        if ($entryParts.Count -lt 1) { continue }
+        $entryLabel = $entryParts[0]
+        if (-not $entryLabel.StartsWith("corp skill file: ")) { continue }
+        $skillRelative = $entryLabel.Substring("corp skill file: ".Length)
+        $skillTopDir = ($skillRelative -split '[\\/]')[0]
+        if (-not $skillFileGroups.Contains($skillTopDir)) { $skillFileGroups[$skillTopDir] = 0 }
+        $skillFileGroups[$skillTopDir] = $skillFileGroups[$skillTopDir] + 1
+    }
+
+    if (-not $SkillsShapeValidated) {
+        # Estado 3 (D-P21-04): la ejecucion nunca llego a este paso.
+        # Distinto de "sin skills": aqui no se sabe si las habria habido.
+        $skillLines = "- shape validation not executed: installation stopped before this step"
+    }
+    elseif ($skillFileGroups.Count -eq 0) {
+        # Estado 2 (D-P21-04): la validacion corrio y no encontro ningun
+        # directorio de skill, declarado o no, en la Source of Truth.
+        $skillLines = "- shape validated: no skill directories found in the Source of Truth"
+    }
+    else {
+        # Estado 1 (D-P21-04): validadas y desplegadas. Una linea por
+        # directorio, ordenada por nombre para que el informe sea
+        # reproducible byte a byte entre ejecuciones con el mismo payload.
+        $skillLines = ($skillFileGroups.Keys | Sort-Object | ForEach-Object {
+            $skillDirName = $_
+            $skillFileCount = $skillFileGroups[$skillDirName]
+            $skillFileWord = if ($skillFileCount -eq 1) { "file" } else { "files" }
+            if ($ValidatedSkillDirs -contains $skillDirName) {
+                "- ${skillDirName}: $skillFileCount $skillFileWord, shape validated"
+            } else {
+                "- ${skillDirName}: $skillFileCount $skillFileWord, not a skill (no SKILL.md)"
+            }
+        }) -join "`n"
+    }
+
     $workflowLines = if ($WorkflowEntries.Count -gt 0) { ($WorkflowEntries | Sort-Object | ForEach-Object { "- $_" }) -join "`n" } else { "- none detected" }
     $missingLines = if ($Missing.Count -gt 0) { ($Missing | ForEach-Object { "- $_" }) -join "`n" } else { "- none" }
     $warningLines = if ($Warnings.Count -gt 0) { ($Warnings | ForEach-Object { "- $_" }) -join "`n" } else { "- none" }
@@ -1087,6 +1148,10 @@ $agentLines
 ### Prompts
 
 $promptLines
+
+### Skills
+
+$skillLines
 
 ### Workflows
 
@@ -1152,6 +1217,8 @@ $DeployedArtifacts = [System.Collections.Generic.List[string]]::new()
 $PreservedArtifacts = @()
 $UndeployedArtifacts = @()
 $WorkflowEntries = @()
+$SkillsShapeValidated = $false
+$ValidatedSkillDirs = @()
 $SamplesCopied = $false
 $DocsCopied = $false
 $ConstitutionCopied = $false
@@ -1279,7 +1346,15 @@ try {
     Install-CorporateAgentsAndPrompts -SourceRepoPath $SourceRepoPath -TargetPath $TargetPath -Deployed $DeployedArtifacts
 
     Write-Step "Deploy corporate skills (manifest-gated, full subtree)"
-    Install-CorporateSkills -SourceRepoPath $SourceRepoPath -TargetPath $TargetPath -Deployed $DeployedArtifacts
+    # P5b: Install-CorporateSkills no cambia su contrato (D-P21-01c). Lo
+    # que cambia es que ya no se descarta su salida: Assert-SkillShape
+    # (linea sin Out-Null en su invocacion) devuelve ahora los
+    # directorios que pasaron la validacion, y esa devolucion atraviesa
+    # Install-CorporateSkills sin tocar su cuerpo, porque ninguna otra
+    # instruccion de la funcion deja nada mas sin suprimir en la
+    # pipeline: las demas ya usan Out-Null o asignacion.
+    $ValidatedSkillDirs = @(Install-CorporateSkills -SourceRepoPath $SourceRepoPath -TargetPath $TargetPath -Deployed $DeployedArtifacts)
+    $SkillsShapeValidated = $true
 
     Write-Step "Verify native preserved artifacts are intact"
     $NativeHashAfter = Get-FileHashSnapshot -Files $NativePreservedFiles
@@ -1398,6 +1473,8 @@ finally {
                 -DeployedArtifacts $DeployedArtifacts `
                 -PreservedArtifacts $PreservedArtifacts `
                 -UndeployedArtifacts $UndeployedArtifacts `
+                -SkillsShapeValidated:$SkillsShapeValidated `
+                -ValidatedSkillDirs $ValidatedSkillDirs `
                 -Warnings $Warnings
             Write-Ok "Installation report generated: $ReportPath"
         }

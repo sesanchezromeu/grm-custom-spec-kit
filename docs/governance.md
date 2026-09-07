@@ -223,7 +223,10 @@ this is grounds for rejection at review.
 
 **GS-03 - No state writes.**
 No skill writes `.specify/memory/active-pbi.md`, `.specify/feature.json` or
-artifacts under `features/`. A skill produces content; the agent persists it.
+artifacts under `features/`. A skill produces content fragments; the shared
+scripts under `skills/_shared/scripts/` assemble and verify those artifacts
+from them. Neither the skill nor the agent authors the content: a write that
+depends on judgement about what the source said is what this norm forbids.
 
 **GS-04 - Third-party skills.**
 Externally sourced skills are not incorporated into the GRM Source of Truth

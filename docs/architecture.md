@@ -159,7 +159,10 @@ Corollaries:
 - No governance rule, prohibition or gate criterion lives inside a `SKILL.md`.
 - No skill determines whether a workflow phase may proceed.
 - No skill writes `active-pbi.md`, `feature.json` or delivery artifacts. A
-  skill produces content; the agent writes it.
+  skill produces content fragments; the shared scripts under
+  `skills/_shared/scripts/` assemble and verify those artifacts from them.
+  The agent runs the scripts and transcribes their result; it does not write
+  the artifacts either.
 
 ### Relation to AP03 and to GS-01
 

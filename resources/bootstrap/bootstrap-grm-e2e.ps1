@@ -559,6 +559,49 @@ function Assert-DeployedProvenance {
     }
 }
 
+function Assert-DeployedSourcePrefix {
+    # P5a (OBS-P2a-01, D-P21-07b): comprueba que el origen de cada
+    # artefacto desplegado cuelga de la Source of Truth y que todas las
+    # entradas usan una sola forma de la ruta.
+    #
+    # $SourceRepoPath se normaliza tras el clon con el mismo proveedor
+    # que Install-CorporateSkills. Esta funcion es la guarda que lo
+    # verifica: si alguien vuelve a introducir un origen de otro
+    # proveedor, deja de ser una etiqueta silenciosamente mal formada y
+    # pasa a ser un fallo duro. Mismo criterio que la guarda de prefijo
+    # de L-11: la guarda importa mas que la correccion.
+    #
+    # Pregunta distinta de la de Assert-DeployedProvenance, que compara
+    # contenido. Se separan por el mismo motivo que D-P20-01 separo
+    # existencia de forma: aisladas, se ejercitan con datos sinteticos
+    # sin instalar nada (ver resources/tools/Test-InstallationReport.ps1).
+    #
+    # Acumula en Missing, el canal existente: la instalacion aborta en la
+    # validacion de runtime y el informe se genera igualmente desde el
+    # finally, con la entrada visible.
+    param(
+        [System.Collections.Generic.List[string]]$Deployed,
+        [string]$SourceRepoPath,
+        [ref]$Missing
+    )
+
+    # El separador final es deliberado: sin el, un directorio hermano
+    # como '...\source-otro' pasaria por estar dentro de '...\source'.
+    $prefix = $SourceRepoPath.TrimEnd('\') + '\'
+
+    foreach ($entry in $Deployed) {
+        $parts = $entry -split '\|', 3
+        if ($parts.Count -lt 3) {
+            $Missing.Value += "deployed-entry-malformed: $entry"
+            continue
+        }
+        $from = $parts[1]
+        if (-not $from.StartsWith($prefix, [System.StringComparison]::OrdinalIgnoreCase)) {
+            $Missing.Value += "source-prefix-mismatch: $from"
+        }
+    }
+}
+
 function Get-UndeployedMemoryFiles {
     # Lista ficheros de memory/ presentes en el SoT pero NO declarados
     # en deploys.memory. Informativo (H-INST-07). Devuelve nombres.
@@ -1153,6 +1196,24 @@ try {
     $SourceRepoPath = Join-Path $CacheRoot "source"
 
     Invoke-GitChecked -Arguments @("clone", "--branch", $Branch, "--single-branch", $SourceRepoUrl, $SourceRepoPath) -ErrorMessage "Unable to clone GRM customization repository."
+
+    # P5a (OBS-P2a-01): $env:TEMP puede venir en forma corta 8.3
+    # (C:\Users\SESANC~1\...). Todo lo derivado de $CacheRoot con
+    # Join-Path hereda esa forma, mientras que el FullName que devuelve
+    # Get-ChildItem en Install-CorporateSkills es la forma larga. Las dos
+    # convivian en la misma lista de artefactos y el informe las imprimia
+    # mezcladas.
+    #
+    # Se normaliza una sola vez, aqui, con el MISMO proveedor que usa
+    # Install-CorporateSkills para calcular su prefijo. Lo que hace
+    # correcta la correccion no es que Get-Item expanda el 8.3, sino que
+    # ambos lados obtienen la ruta de la misma forma: coinciden por
+    # construccion, no por coincidencia.
+    #
+    # No puede hacerse en la asignacion de $SourceRepoPath: el directorio
+    # no existe hasta que el clon termina.
+    $SourceRepoPath = (Get-Item -LiteralPath $SourceRepoPath).FullName.TrimEnd('\')
+
     Push-Location $SourceRepoPath
     try {
         $InstalledCommit = (& git rev-parse HEAD).Trim()
@@ -1277,6 +1338,7 @@ try {
     }
 
     Assert-DeployedProvenance -Deployed $DeployedArtifacts -Missing ([ref]$Missing)
+    Assert-DeployedSourcePrefix -Deployed $DeployedArtifacts -SourceRepoPath $SourceRepoPath -Missing ([ref]$Missing)
     $UndeployedArtifacts = @(Get-UndeployedMemoryFiles -SourceRepoPath $SourceRepoPath)
 
     if (Test-Path $agentsTo) {

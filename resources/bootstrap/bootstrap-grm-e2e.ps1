@@ -1,3 +1,5 @@
+#Requires -Version 5.1
+
 <#
 .SYNOPSIS
 Bootstrap or update a GRM Custom Spec Kit workspace.

@@ -89,6 +89,15 @@ if ($GovernanceNotesPath) {
     $governance = ([System.IO.File]::ReadAllText($abs, [System.Text.Encoding]::UTF8)).TrimEnd()
 }
 
+# Recorded for Assert-ActivePbi.ps1 (D-P23-02, OBS-P22-09): the fixed text
+# has no source fragment to compare against unless this script writes one.
+# Written unconditionally, default or override, so the verifier always has
+# something to check '## Governance Notes' against.
+[System.IO.File]::WriteAllText(
+    (Join-Path $SectionsPath 'governance_notes.md'),
+    $governance,
+    (New-Object System.Text.UTF8Encoding($false)))
+
 $out     = [System.Collections.Generic.List[string]]::new()
 $written = 0
 $out.Add('# Active PBI') | Out-Null

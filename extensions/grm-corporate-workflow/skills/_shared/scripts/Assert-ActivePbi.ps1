@@ -2,15 +2,24 @@
 <#
     Assert-ActivePbi.ps1
 
-    Verify that active-pbi.md reproduces the retrieved PBI without alteration.
+    Verify that active-pbi.md reproduces, without alteration, the fragments
+    Build-ActivePbi.ps1 assembled it from.
 
-    This closes the last unverified stretch of the load. Get-WorkItem.ps1
-    guarantees fidelity from the Azure DevOps API to the payload; nothing
-    guaranteed fidelity from the payload to the file the agent writes. In an
-    observed run the agent produced a well written, plausible active-pbi.md
-    containing a third dialog option, a modal requirement and a localisation
-    requirement that appear nowhere in the work item, while dropping an
-    informational message and a traceability rule that do appear in it.
+    Build-ActivePbi.ps1 already assembles the file mechanically (D-P14b-02):
+    the risk this script defends against today is not the agent composing the
+    file by hand, but the file being touched after assembly, deliberately or
+    by a repair attempt. Both source-adapter SKILL.md files say so: "Repairing
+    the artifact until the check passes is not verification."
+
+    P23b (OBS-P22-09, OBS-P23-01, OBS-P23-02, OBS-P23-03): earlier versions of
+    this script compared only the sections it expected, in the order it
+    expected them, and treated '## Governance Notes' as present-or-absent
+    rather than as content with a fragment behind it. That left four regions
+    unchecked: anything before the first known heading, a known heading
+    repeated or out of sequence, and the tail of the file once the last
+    section had opened. This version partitions the whole file and requires
+    every known heading exactly once, in the declared order, nothing left
+    over.
 
     An assertion made in prose by the agent is not a verification. This script
     compares text.
@@ -18,7 +27,7 @@
     Exit codes: 0 verified, 1 mismatch or missing input.
 
     Usage:
-      powershell -NoProfile -ExecutionPolicy Bypass -File .github\skills\grm-azure-devops-pbi\scripts\Assert-ActivePbi.ps1
+      powershell -NoProfile -ExecutionPolicy Bypass -File .github\skills\_shared\scripts\Assert-ActivePbi.ps1
 #>
 
 [CmdletBinding()]
@@ -53,6 +62,7 @@ $MAP = [ordered]@{
     'Dependencies'                    = @{ files = @('dependencies.md') }
     'Out of Scope'                    = @{ files = @('out_of_scope.md') }
     'Notes'                           = @{ files = @('notes.md', 'extra_sections.md') }
+    'Governance Notes'                = @{ files = @('governance_notes.md') }
     'Source work item state'          = @{ files = @('source_work_item_state.md'); optional = $true }
 }
 
@@ -68,15 +78,19 @@ function Stop-Verification {
 
 function Get-ComparableLines {
     param([string]$Text)
-    if ($null -eq $Text) { return @() }
+    # The unary comma forces every return to leave this function as a single
+    # array object. Without it, PowerShell unwraps a one-element array (or an
+    # empty one) into a bare scalar (or $null) at the caller: $result[0] on a
+    # bare string then indexes its first character, not its first line.
+    if ($null -eq $Text) { return ,@() }
     $lines = @($Text -split "`r?`n" | ForEach-Object { $_.TrimEnd() })
     # Leading and trailing blank lines are layout, not content.
     $start = 0
     while ($start -lt $lines.Count -and $lines[$start] -eq '') { $start++ }
     $end = $lines.Count - 1
     while ($end -ge $start -and $lines[$end] -eq '') { $end-- }
-    if ($end -lt $start) { return @() }
-    return @($lines[$start..$end])
+    if ($end -lt $start) { return ,@() }
+    return ,@($lines[$start..$end])
 }
 
 # ---------------------------------------------------------------------------
@@ -93,10 +107,21 @@ $fileLines = @(Get-Content -Path $ActivePbiPath -Encoding UTF8)
 # Split the file into sections on the known headings only. An unrecognised
 # '## ' line is treated as content, because a converted work item may legally
 # contain Markdown headings of its own.
-$known    = @($MAP.Keys) + @('Governance Notes')
-$sections = [ordered]@{}
-$current  = $null
-$buffer   = [System.Collections.Generic.List[string]]::new()
+$known    = @($MAP.Keys)
+
+# Orden declarado de cada encabezado conocido (P23b, OBS-P23-02/-03). $MAP es
+# un hashtable ordenado: el orden de sus claves es el orden del layout.
+$orderIndex = @{}
+$idx = 0
+foreach ($k in $MAP.Keys) { $orderIndex[$k] = $idx; $idx++ }
+
+$failures = [System.Collections.Generic.List[string]]::new()
+
+$sections      = [ordered]@{}
+$preamble      = [System.Collections.Generic.List[string]]::new()
+$current       = $null
+$buffer        = [System.Collections.Generic.List[string]]::new()
+$lastSeenIndex = -1
 
 foreach ($line in $fileLines) {
     $isHeading = $false
@@ -104,16 +129,30 @@ foreach ($line in $fileLines) {
         $name = $Matches[1]
         if ($known -contains $name) {
             $isHeading = $true
+            if ($orderIndex[$name] -le $lastSeenIndex) {
+                $failures.Add(("section '## {0}' appears out of order or more than once" -f $name)) | Out-Null
+            } else {
+                $lastSeenIndex = $orderIndex[$name]
+            }
             if ($current) { $sections[$current] = ($buffer -join "`n") }
             $current = $name
             $buffer  = [System.Collections.Generic.List[string]]::new()
         }
     }
-    if (-not $isHeading -and $current) { $buffer.Add($line) | Out-Null }
+    if (-not $isHeading) {
+        if ($current) { $buffer.Add($line) | Out-Null } else { $preamble.Add($line) | Out-Null }
+    }
 }
 if ($current) { $sections[$current] = ($buffer -join "`n") }
 
-$failures = [System.Collections.Generic.List[string]]::new()
+# OBS-P23-01: todo lo anterior al primer encabezado conocido es maquetacion,
+# no una seccion con fragmento propio. Lo unico que Build-ActivePbi.ps1 pone
+# ahi es la linea de titulo.
+$preambleText = (Get-ComparableLines ($preamble -join "`n")) -join "`n"
+if ($preambleText -ne '# Active PBI') {
+    $shown = if ($preambleText -eq '') { '<empty>' } else { $preambleText }
+    $failures.Add(("content before the first section does not match the expected title. Found: {0}" -f $shown)) | Out-Null
+}
 
 $verified = 0
 
@@ -166,10 +205,6 @@ foreach ($heading in $MAP.Keys) {
     }
 }
 
-if (-not $sections.Contains('Governance Notes')) {
-    $failures.Add("section '## Governance Notes' is absent from the active PBI") | Out-Null
-}
-
 if ($failures.Count -gt 0) {
     [Console]::Error.WriteLine("Active PBI does not reproduce the retrieved work item.")
     [Console]::Error.WriteLine("")
@@ -179,7 +214,7 @@ if ($failures.Count -gt 0) {
 }
 
 # The count is of sections compared against a fragment. '## Governance Notes'
-# is checked for presence only and is not included: it has no counterpart in
-# the source, so there is nothing to compare it with.
+# is included since P23b (D-P23-02): the corporate boilerplate now has a
+# recorded fragment to compare against, closing OBS-P22-09.
 Write-Output ("verification=ok sections={0}" -f $verified)
 exit 0

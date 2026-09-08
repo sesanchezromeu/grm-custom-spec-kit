@@ -565,6 +565,21 @@ Currently open:
 - The installation guide does not warn about automatic discovery of
   third-party skill directories such as `.claude/skills` or
   `~/.copilot/skills`, which GS-04 in the Governance Guide requires it to do.
+- The retrieval artifact paths are declared literally in every script that
+  touches them. `.specify/memory/.grm-pbi-sections` appears in
+  `Read-PbiMarkdown.ps1`, `Get-WorkItem.ps1`, `Build-ActivePbi.ps1`,
+  `Assert-ActivePbi.ps1` and `Reset-ActiveContext.ps1`;
+  `.specify/memory/.grm-pbi-payload.json` in the first two and in
+  `Reset-ActiveContext.ps1`. The maintainer harness
+  `Test-ActiveContextReset.ps1` declares both again, in backslash form.
+  Those counts are of distinct Source of Truth scripts: the runtime mirror
+  is the intended AP03 duplication and is not counted, which is the
+  distinction the `Get-DepthProfile` entry below got wrong. Renaming either
+  artifact means editing every one of those declarations, and nothing
+  detects one that is missed. `Reset-ActiveContext.ps1` also prints both
+  paths literally on four report lines; those are contract wording, not
+  duplication to remove, which is why that script fixes its paths as
+  constants rather than taking them as parameters.
 
 Accepted, not pending. The entry below records a limitation of the agent
 host, not debt of this framework. It is here so that the finding survives the

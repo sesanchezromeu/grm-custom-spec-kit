@@ -322,6 +322,7 @@ Reset the active execution context.
 - Resets active PBI context.
 - Ensures `features/` exists and preserves everything already under it.
 - Removes feature execution state (`.specify/feature.json`).
+- Removes the retrieval artifacts of the previous load (`.specify/memory/.grm-pbi-sections/` and `.specify/memory/.grm-pbi-payload.json`).
 
 ### Expected Outcome
 

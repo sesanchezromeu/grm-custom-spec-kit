@@ -3,7 +3,8 @@
     Reset-ActiveContext.ps1
 
     Reset the GRM corporate execution context: the active PBI stub, the
-    features/ directory and the active feature pointer.
+    features/ directory, the active feature pointer and the retrieval
+    artifacts left by the PBI source skills (OBS-P23-04).
 
     Why a script does this (D-P16-CIERRE): across T-03 to T-07 the agent
     improvised this reset five times and produced three different mechanisms
@@ -47,6 +48,8 @@ $MEMORY_DIR   = '.specify/memory'
 $ACTIVE_PBI   = '.specify/memory/active-pbi.md'
 $FEATURES_DIR = 'features'
 $POINTER      = '.specify/feature.json'
+$SECTIONS_DIR = '.specify/memory/.grm-pbi-sections'
+$PAYLOAD      = '.specify/memory/.grm-pbi-payload.json'
 
 # The empty-state content required by corp.erase.agent.md, Expected final
 # state. UTF-8 with BOM and CRLF, matching Build-ActivePbi.ps1, so the stub
@@ -125,7 +128,52 @@ if (Test-Path -LiteralPath $POINTER) {
 }
 
 # ---------------------------------------------------------------------------
-# 5. Verification. Every line below is computed here and nowhere else.
+# 5. Retrieval artifacts left by the PBI source skills (OBS-P23-04). Both are
+#    rewritten wholesale on every load, so nothing accumulated between loads;
+#    what failed was the erase, which left the last loaded context on disk.
+#    corp.assess, corp.plan and corp.doc read active-pbi.md only, so removing
+#    them here breaks nothing downstream.
+# ---------------------------------------------------------------------------
+
+$sectionsAction = 'skipped'
+if (Test-Path -LiteralPath $SECTIONS_DIR) {
+    try {
+        Remove-Item -LiteralPath $SECTIONS_DIR -Recurse -Force
+        $sectionsAction = 'done'
+    }
+    catch {
+        $sectionsAction = 'failed'
+        [Console]::Error.WriteLine("Section fragments could not be removed: $_")
+        # A directory is a set: naming what survived tells the operator which
+        # handle to release, as features/ names each lost entry (D-P25-02).
+        # The payload is a single file, so the exception message is the whole
+        # information and it gets the pointer's treatment instead.
+        $remaining = @()
+        try {
+            $remaining = @(Get-ChildItem -LiteralPath $SECTIONS_DIR -Recurse -Force |
+                ForEach-Object { $_.FullName })
+        }
+        catch { }
+        foreach ($entry in $remaining) {
+            [Console]::Error.WriteLine("Section fragment still present: $entry")
+        }
+    }
+}
+
+$payloadAction = 'skipped'
+if (Test-Path -LiteralPath $PAYLOAD) {
+    try {
+        Remove-Item -LiteralPath $PAYLOAD -Force
+        $payloadAction = 'done'
+    }
+    catch {
+        $payloadAction = 'failed'
+        [Console]::Error.WriteLine("Retrieval payload could not be removed: $_")
+    }
+}
+
+# ---------------------------------------------------------------------------
+# 6. Verification. Every line below is computed here and nowhere else.
 # ---------------------------------------------------------------------------
 
 $activeReady = $false
@@ -150,15 +198,20 @@ if ($before.Count -gt 0) {
 }
 
 $pointerAbsent  = -not (Test-Path -LiteralPath $POINTER)
+$sectionsAbsent = -not (Test-Path -LiteralPath $SECTIONS_DIR)
+$payloadAbsent  = -not (Test-Path -LiteralPath $PAYLOAD)
 $featuresAction = if ($featuresExists -and $preserved) { 'done' } else { 'failed' }
 
 $ok = ($resetAction -eq 'done') -and
       ($featuresAction -eq 'done') -and
       ($pointerAction -ne 'failed') -and
-      $activeReady -and $featuresExists -and $preserved -and $pointerAbsent
+      ($sectionsAction -ne 'failed') -and
+      ($payloadAction -ne 'failed') -and
+      $activeReady -and $featuresExists -and $preserved -and $pointerAbsent -and
+      $sectionsAbsent -and $payloadAbsent
 
 # ---------------------------------------------------------------------------
-# 6. Report. Copy of the Completion contract; authority is corp.erase.agent.md.
+# 7. Report. Copy of the Completion contract; authority is corp.erase.agent.md.
 # ---------------------------------------------------------------------------
 
 if ($ok) { Write-Output 'Corporate context erased.' }
@@ -167,11 +220,15 @@ Write-Output 'Actions:'
 Write-Output ("- .specify/memory/active-pbi.md reset: {0}" -f $resetAction)
 Write-Output ("- features/ preserved: {0}" -f $featuresAction)
 Write-Output ("- .specify/feature.json removed: {0}" -f $pointerAction)
+Write-Output ("- .specify/memory/.grm-pbi-sections/ removed: {0}" -f $sectionsAction)
+Write-Output ("- .specify/memory/.grm-pbi-payload.json removed: {0}" -f $payloadAction)
 Write-Output 'Verification:'
 Write-Output ("- .specify/memory/active-pbi.md ready: {0}" -f $(if ($activeReady) { 'yes' } else { 'no' }))
 Write-Output ("- features/ exists: {0}" -f $(if ($featuresExists) { 'yes' } else { 'no' }))
 Write-Output ("- historical feature artifacts preserved: {0}" -f $(if ($preserved) { 'yes' } else { 'no' }))
 Write-Output ("- .specify/feature.json absent: {0}" -f $(if ($pointerAbsent) { 'yes' } else { 'no' }))
+Write-Output ("- .specify/memory/.grm-pbi-sections/ absent: {0}" -f $(if ($sectionsAbsent) { 'yes' } else { 'no' }))
+Write-Output ("- .specify/memory/.grm-pbi-payload.json absent: {0}" -f $(if ($payloadAbsent) { 'yes' } else { 'no' }))
 
 if (-not $ok) {
     Write-Output 'reset=failed'

@@ -31,6 +31,8 @@ Your responsibility is to erase the current corporate execution context so that 
 This command must clean only the active operational execution context:
 - .specify/memory/active-pbi.md
 - .specify/feature.json
+- .specify/memory/.grm-pbi-sections/
+- .specify/memory/.grm-pbi-payload.json
 
 The command must preserve historical feature delivery artifacts under:
 - features/<feature-folder>/
@@ -83,7 +85,7 @@ When executed, run this command from the repository root, and nothing else:
 
 powershell -NoProfile -ExecutionPolicy Bypass -File .github\skills\_shared\scripts\Reset-ActiveContext.ps1
 
-The script performs the whole cleanup and computes every line of the report: it records every entry under features/ with its size before it touches anything, writes the empty-state stub, ensures features/ exists, removes .specify/feature.json if present, and compares the recording afterwards. Its last line is `reset=ok` or `reset=failed`.
+The script performs the whole cleanup and computes every line of the report: it records every entry under features/ with its size before it touches anything, writes the empty-state stub, ensures features/ exists, removes .specify/feature.json if present, removes the retrieval artifacts left by the source skill (.specify/memory/.grm-pbi-sections/ and .specify/memory/.grm-pbi-payload.json) if present, and compares the recording afterwards. Its last line is `reset=ok` or `reset=failed`.
 
 You write nothing. You do not create, move or delete anything under .specify/ or features/ yourself, and you do not add checks of your own around the script.
 
@@ -111,11 +113,15 @@ Actions:
 - .specify/memory/active-pbi.md reset: <done|failed>
 - features/ preserved: <done|failed>
 - .specify/feature.json removed: <done|skipped|failed>
+- .specify/memory/.grm-pbi-sections/ removed: <done|skipped|failed>
+- .specify/memory/.grm-pbi-payload.json removed: <done|skipped|failed>
 Verification:
 - .specify/memory/active-pbi.md ready: <yes|no>
 - features/ exists: <yes|no>
 - historical feature artifacts preserved: <yes|no>
 - .specify/feature.json absent: <yes|no>
+- .specify/memory/.grm-pbi-sections/ absent: <yes|no>
+- .specify/memory/.grm-pbi-payload.json absent: <yes|no>
 Status:
 Clean active context ready for /corp.load
 
@@ -131,6 +137,8 @@ After execution:
 - features/ exists.
 - Existing historical feature folders and artifacts under features/ are preserved.
 - .specify/feature.json does not exist.
+- .specify/memory/.grm-pbi-sections/ does not exist.
+- .specify/memory/.grm-pbi-payload.json does not exist.
 - No previous PBI context remains active.
 
 ### Failure handling

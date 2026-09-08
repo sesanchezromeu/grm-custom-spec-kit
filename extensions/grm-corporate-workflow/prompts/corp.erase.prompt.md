@@ -12,6 +12,8 @@ This command prevents contamination between different PBI executions.
 The command must clean only:
 - .specify/memory/active-pbi.md
 - .specify/feature.json
+- .specify/memory/.grm-pbi-sections/
+- .specify/memory/.grm-pbi-payload.json
 
 The command must preserve:
 - features/<feature-folder>/
@@ -22,7 +24,7 @@ Run this command from the repository root, and nothing else:
 
 powershell -NoProfile -ExecutionPolicy Bypass -File .github\skills\_shared\scripts\Reset-ActiveContext.ps1
 
-The script is the cleanup. It writes the empty-state stub, ensures features/ exists, removes .specify/feature.json if present, and verifies the four conditions by comparing features/ before and after. Nothing here is to be reimplemented inline: this file describes what the command is for, not how the cleanup is carried out.
+The script is the cleanup. It writes the empty-state stub, ensures features/ exists, removes .specify/feature.json if present, removes the retrieval artifacts left by the source skill (.specify/memory/.grm-pbi-sections/ and .specify/memory/.grm-pbi-payload.json) if present, and verifies the six conditions by comparing features/ before and after. Nothing here is to be reimplemented inline: this file describes what the command is for, not how the cleanup is carried out.
 
 Continue only if the script's last line is `reset=ok`.
 

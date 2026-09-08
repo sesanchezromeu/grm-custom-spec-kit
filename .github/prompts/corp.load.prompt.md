@@ -9,6 +9,7 @@ Before loading a new PBI, apply the current /corp.erase reset policy:
 - Ensure features/ exists.
 - Preserve historical feature folders and delivery artifacts under features/.
 - Remove .specify/feature.json if it exists.
+- Remove .specify/memory/.grm-pbi-sections/ and .specify/memory/.grm-pbi-payload.json if they exist.
 - Verify the active context reset result before continuing.
 
 Only after a successful active context reset may the new PBI be loaded and registered as the active PBI.
@@ -34,6 +35,8 @@ After the pre-load context reset:
 - features/ exists.
 - Historical feature folders and delivery artifacts under features/ are preserved.
 - .specify/feature.json is absent.
+- .specify/memory/.grm-pbi-sections/ is absent.
+- .specify/memory/.grm-pbi-payload.json is absent.
 
 If the active context reset fails, the PBI must not be loaded.
 

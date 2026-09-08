@@ -115,7 +115,7 @@ When invoked, you MUST execute these steps in order:
 
   powershell -NoProfile -ExecutionPolicy Bypass -File .github\skills\_shared\scripts\Reset-ActiveContext.ps1
 
-  That script is the /corp.erase policy in executable form. It snapshots features/ before touching anything, writes the empty-state stub, ensures features/ exists, removes .specify/feature.json if present, and computes every verification line. You do not reset anything by hand and you do not add checks of your own around it.
+  That script is the /corp.erase policy in executable form. It snapshots features/ before touching anything, writes the empty-state stub, ensures features/ exists, removes .specify/feature.json if present, removes the retrieval artifacts of the previous load (.specify/memory/.grm-pbi-sections/ and .specify/memory/.grm-pbi-payload.json) if present, and computes every verification line. You do not reset anything by hand and you do not add checks of your own around it.
 - Read the script's last line. Continue only on `reset=ok`.
 - Load the source skill corresponding to the provided flag.
 - Follow the skill's procedure. Its scripts retrieve the source, assemble `.specify/memory/active-pbi.md` and verify it.

@@ -566,6 +566,34 @@ Currently open:
   third-party skill directories such as `.claude/skills` or
   `~/.copilot/skills`, which GS-04 in the Governance Guide requires it to do.
 
+Accepted, not pending. The entry below records a limitation of the agent
+host, not debt of this framework. It is here so that the finding survives the
+session, and so that nobody spends a sixth attempt rediscovering it:
+
+- The `corp.load` completion report shortens `### Source` to the bare file
+  name and `### Active PBI context` to `active-pbi.md`, dropping the directory
+  and the path that `corp.load.agent.md` requires in full. Observed in five
+  loads out of five, across three different mechanisms: a written instruction,
+  a written instruction carrying the exact mistake to avoid as its own
+  example, and finally the values printed ready-formed by
+  `Assert-ActivePbi.ps1` on its `report_source:` and
+  `report_active_pbi_context:` lines. The script was verified to print both
+  correctly in the same run the agent shortened them, and the third line of
+  that same output, `verification=ok sections=<n>`, was transcribed intact.
+  The difference is that the verification line was already part of what the
+  agent transcribed, while the other two required it to take a value from a
+  new source instead of composing the field itself. Where the agent retains
+  the freedom to compose a field, it composes, and composing shortens.
+
+  Not pursued further, deliberately. Both fields are presentation labels in
+  an on-screen report. `.specify/memory/active-pbi.md` is assembled by script
+  and verified in full by `Assert-ActivePbi.ps1`; neither the artifact nor its
+  verification depends on how the report is worded, so nothing verifiable is
+  lost. The remaining fix would be to have a script emit the entire report
+  block for the agent to paste, which is a larger change with no evidence in
+  its favour: a host that rewrites two ready-formed values may equally
+  reformat a pasted block.
+
 Recently closed, kept here briefly so the correction is traceable:
 
 - The runtime synchronization helper for `skills/` is now versioned with the

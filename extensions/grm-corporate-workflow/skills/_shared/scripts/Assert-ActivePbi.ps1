@@ -222,9 +222,6 @@ if ($failures.Count -gt 0) {
     exit 1
 }
 
-# The count is of sections compared against a fragment. '## Governance Notes'
-# is included since P23b (D-P23-02): the corporate boilerplate now has a
-# recorded fragment to compare against, closing OBS-P22-09.
 # P23c. The report fields the command must transcribe, already formed. Read
 # from the fragment rather than from the parsed file: the fragment is the
 # source the file was built from, and any divergence between the two would
@@ -244,6 +241,9 @@ if (-not $reference) {
     exit 1
 }
 
+# The count is of sections compared against a fragment. '## Governance Notes'
+# is included since P23b (D-P23-02): the corporate boilerplate now has a
+# recorded fragment to compare against, closing OBS-P22-09.
 Write-Output ("verification=ok sections={0}" -f $verified)
 Write-Output ("report_source: {0}" -f $reference)
 Write-Output ("report_active_pbi_context: {0}" -f $ActivePbiPath)

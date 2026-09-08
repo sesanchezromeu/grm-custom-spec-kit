@@ -24,6 +24,15 @@
     An assertion made in prose by the agent is not a verification. This script
     compares text.
 
+    P23c (OBS-P22-03, OBS-P22-04, OBS-P22-05): on success this script also
+    prints the two report fields the agent shortened in four loads out of
+    four, already formed. corp.load.agent.md used to ask it to copy the
+    envelope's Reference "with its directory" and to write the context path in
+    full; both instructions carried the exact mistake to avoid, in writing,
+    and both were ignored every time. Deriving a value is where the agent
+    fails; transcribing a printed line is not. The figures come from the
+    script now, and the command transcribes them.
+
     Exit codes: 0 verified, 1 mismatch or missing input.
 
     Usage:
@@ -216,5 +225,26 @@ if ($failures.Count -gt 0) {
 # The count is of sections compared against a fragment. '## Governance Notes'
 # is included since P23b (D-P23-02): the corporate boilerplate now has a
 # recorded fragment to compare against, closing OBS-P22-09.
+# P23c. The report fields the command must transcribe, already formed. Read
+# from the fragment rather than from the parsed file: the fragment is the
+# source the file was built from, and any divergence between the two would
+# have failed the comparison above before reaching this line.
+#
+# Extracted before anything is printed: a script that announces
+# verification=ok and then aborts leaves the agent a success line to report
+# from, which is the contradiction this whole command exists to prevent.
+$sourceFragment = (Resolve-Path (Join-Path $SectionsPath 'source.md')).Path
+$reference = $null
+foreach ($line in (([System.IO.File]::ReadAllText($sourceFragment, [System.Text.Encoding]::UTF8)) -split "`r?`n")) {
+    if ($line -match '^-\s+Reference:\s*(.+?)\s*$') { $reference = $Matches[1]; break }
+}
+if (-not $reference) {
+    [Console]::Error.WriteLine("source.md carries no Reference field. The report cannot be formed.")
+    Write-Output "verification=failed"
+    exit 1
+}
+
 Write-Output ("verification=ok sections={0}" -f $verified)
+Write-Output ("report_source: {0}" -f $reference)
+Write-Output ("report_active_pbi_context: {0}" -f $ActivePbiPath)
 exit 0

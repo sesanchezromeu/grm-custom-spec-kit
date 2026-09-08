@@ -48,7 +48,7 @@ function New-Fixture {
     New-Item -ItemType Directory -Path $sections -Force | Out-Null
 
     $fragments = [ordered]@{
-        'source.md'             = "- Type: Markdown file`n- Reference: fixture.md"
+        'source.md'             = "- Type: Markdown file`n- Reference: samples/fixtures/fixture.md"
         'verbatim.md'           = "Fixture description.`n`n---`n`n**Acceptance Criteria**`n`nAC-01. Fixture criterion."
         'pbi_id.md'             = "FIXTURE-01"
         'title.md'              = "Fixture title"
@@ -140,7 +140,8 @@ try {
     [System.IO.File]::WriteAllText($pbi, (New-BaselineBody -Fixture $fx), (New-Object System.Text.UTF8Encoding($true)))
     $res = Invoke-Assertion -ActivePbiPath $pbi -SectionsPath $fx.Sections
     Add-Result "positiva-completa" `
-        ($res.ExitCode -eq 0 -and $res.Output -match 'verification=ok sections=12') $res.Output
+        ($res.ExitCode -eq 0 -and $res.Output -match 'verification=ok sections=12' `
+         -and $res.Output -match 'report_source: samples/fixtures/fixture\.md') $res.Output
 
     # 2. positiva-backlog-con-estado
     $r = Join-Path $work "s2"; New-Item -ItemType Directory -Path $r -Force | Out-Null
@@ -149,7 +150,8 @@ try {
     [System.IO.File]::WriteAllText($pbi, (New-BaselineBody -Fixture $fx -WithWorkItemState), (New-Object System.Text.UTF8Encoding($true)))
     $res = Invoke-Assertion -ActivePbiPath $pbi -SectionsPath $fx.Sections
     Add-Result "positiva-backlog-con-estado" `
-        ($res.ExitCode -eq 0 -and $res.Output -match 'verification=ok sections=13') $res.Output
+        ($res.ExitCode -eq 0 -and $res.Output -match 'verification=ok sections=13' `
+         -and $res.Output -match 'report_source: samples/fixtures/fixture\.md') $res.Output
 
     # 3. preambulo-con-intrusa (OBS-P23-01)
     $r = Join-Path $work "s3"; New-Item -ItemType Directory -Path $r -Force | Out-Null
@@ -217,6 +219,22 @@ try {
     $res = Invoke-Assertion -ActivePbiPath $pbi -SectionsPath $fx.Sections
     Add-Result "titulo-de-una-linea-alterado" `
         ($res.ExitCode -ne 0 -and $res.Output -match "section 'Title'") $res.Output
+
+    # 9. source-sin-reference (rama de fallo de la extraccion de P23c)
+    $r = Join-Path $work "s9"; New-Item -ItemType Directory -Path $r -Force | Out-Null
+    $fx = New-Fixture -Root $r
+    # Se retira Reference de los dos lados a la vez: del fragmento en memoria,
+    # de donde New-BaselineBody compone el fichero, y del fragmento en disco.
+    # Asi la comparacion pasa y la ejecucion llega a la extraccion, que es el
+    # mecanismo que este escenario quiere ver fallar (L-20).
+    $fx.Fragments['source.md'] = "- Type: Markdown file"
+    [System.IO.File]::WriteAllText((Join-Path $fx.Sections 'source.md'), "- Type: Markdown file", $enc)
+    $pbi = Join-Path $r "active-pbi.md"
+    [System.IO.File]::WriteAllText($pbi, (New-BaselineBody -Fixture $fx), (New-Object System.Text.UTF8Encoding($true)))
+    $res = Invoke-Assertion -ActivePbiPath $pbi -SectionsPath $fx.Sections
+    Add-Result "source-sin-reference" `
+        ($res.ExitCode -ne 0 -and $res.Output -match 'carries no Reference field' `
+         -and $res.Output -notmatch 'verification=ok') $res.Output
 }
 finally {
     Remove-Item -Path $work -Recurse -Force -ErrorAction SilentlyContinue

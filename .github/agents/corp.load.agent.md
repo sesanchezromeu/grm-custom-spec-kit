@@ -306,10 +306,10 @@ After loading the PBI, respond with:
 
 ## PBI loaded successfully
 ### Source
-<The Reference field of the envelope, copied whole. It is a path or a work item reference and it carries its directory. Never the bare file name, never the rest of the envelope.>
+<The value printed by Assert-ActivePbi.ps1 on its `report_source:` line, after the colon and the space, transcribed character for character. Do not shorten it, do not strip its directory, do not read it from anywhere else.>
 
 ### Active PBI context
-.specify/memory/active-pbi.md
+<The value printed by Assert-ActivePbi.ps1 on its `report_active_pbi_context:` line, after the colon and the space, transcribed character for character. Do not shorten it to the bare file name.>
 
 ### Summary
 - PBI ID: <the contents of .specify/memory/.grm-pbi-sections/pbi_id.md>
@@ -324,9 +324,9 @@ Read those two fragments. Do not look the values up in .specify/memory/active-pb
 <Warnings reported by the source skill, such as comments present on the work item or artifact links detected. If none, write "None detected.">
 
 ### Completeness verification
-<The contents of .specify/memory/.grm-pbi-sections/verification.md, transcribed as printed, plus the verifier's `verification=ok` line.>
+<The contents of .specify/memory/.grm-pbi-sections/verification.md, transcribed as printed, then the verifier's first output line in full, `verification=ok sections=<n>`, including the count.>
 
-This section is never omitted and never summarized. A load reported without its figures is an unverified load, whatever the rest of the report says. Do not replace a figure with a word: "all sections preserved" is not a count.
+This section is never omitted and never summarized. A load reported without its figures is an unverified load, whatever the rest of the report says. Do not replace a figure with a word: "all sections preserved" is not a count. The verifier's line ends with `sections=<n>`; a bare `verification=ok` is a truncated transcription and invalidates the report.
 
 ### Governance reminder
 The loaded PBI is the functional source of truth.

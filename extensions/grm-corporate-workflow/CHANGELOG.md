@@ -1,10 +1,40 @@
 # Changelog
 
-Version: 1.2
+Version: 1.3
 Last Updated: 2026-09-08
 Status: Release Candidate
 
 All notable changes to the GRM Corporate Workflow Extension are documented in this file.
+
+---
+
+## [1.3.0] - 2026-09-08
+
+### Status
+
+Release Candidate
+
+### Overview
+
+`/corp.erase` now removes the retrieval artifacts left by the PBI source
+skills. Until this release the command reported a clean context while the
+fragments and the payload of the last loaded PBI stayed on disk.
+
+### Fixed
+
+- `Reset-ActiveContext.ps1` left `.specify/memory/.grm-pbi-sections/` and
+  `.specify/memory/.grm-pbi-payload.json` in place. Both are now removed,
+  and their removal and their absence are reported and verified like every
+  other artifact in the contract.
+- The scope stated in `corp.erase.agent.md`, `corp.erase.prompt.md`,
+  `corp.load.agent.md`, `corp.load.prompt.md` and `docs/user-guide.md` did
+  not cover those two paths. The documented scope promised a cleanup the
+  command did not perform.
+
+### Compatibility
+
+Spec Kit: Current supported version.
+Governance Preset: grm-corporate-governance v1.0.0.
 
 ---
 

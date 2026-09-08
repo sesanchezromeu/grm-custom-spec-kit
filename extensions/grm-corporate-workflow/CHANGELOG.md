@@ -1,10 +1,49 @@
 # Changelog
 
-Version: 1.1
-Last Updated: 2026-09-01
+Version: 1.2
+Last Updated: 2026-09-08
 Status: Release Candidate
 
 All notable changes to the GRM Corporate Workflow Extension are documented in this file.
+
+---
+
+## [1.2.0] - 2026-09-08
+
+### Status
+
+Release Candidate
+
+### Overview
+
+Assert-ActivePbi.ps1 now verifies the assembled active PBI file in full, not
+only the sections it expects. corp.load transcribes report fields the script
+already formed instead of composing them.
+
+### Fixed
+
+- `Assert-ActivePbi.ps1` compared the preamble, the tail after the last
+  expected section, duplicate headers, and section order against nothing.
+  All four are now verified.
+- `Get-ComparableLines` returned a bare string instead of a single-element
+  array for any one-line section, collapsing the comparison to its first
+  character. Single-line sections such as `PBI ID` and `Title` were
+  effectively unverified.
+- `corp.load.agent.md` shortened the source reference and the active PBI
+  path it reported, dropping directory and path segments. The script now
+  emits both fields already formed, and the agent transcribes them instead
+  of composing them.
+- `verification=ok` printed without the number of sections verified.
+
+### Changed
+
+- The report source and active PBI context lines are read from the
+  fragment the assembled file was built from, not recomposed by the agent.
+
+### Compatibility
+
+Spec Kit: Current supported version.
+Governance Preset: grm-corporate-governance v1.0.0.
 
 ---
 
@@ -137,3 +176,10 @@ Spec Kit: Current supported version.
 Governance Preset: grm-corporate-governance v1.0.0.
 
 ---
+
+## Maintenance Note
+
+`Last Updated` in the header above is moved on every edit to this file,
+including entries that only remove or amend prior content (as in P6e/P6f).
+A changelog whose header predates its most recent edit misrepresents its
+own currency.

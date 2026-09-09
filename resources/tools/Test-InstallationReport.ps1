@@ -382,7 +382,7 @@ Invoke-Scenario -Name "entrada-malformada" -SourceRepoPath $long -ExpectedNewCou
 #     (OBS-P21-02, D-P28-06: b). Mensaje distinto a proposito
 #     ("provenance-entry-malformed", no "deployed-entry-malformed"):
 #     las dos guardias corren sobre la misma lista $DeployedArtifacts
-#     en produccion, y con el mismo texto la misma entrada aparecería
+#     en produccion, y con el mismo texto la misma entrada aparece
 #     duplicada y sin distincion en el informe final.
 Invoke-ProvenanceScenario -Name "entrada-malformada-provenance" -ExpectedNewCount 1 -ExpectedSubstring "provenance-entry-malformed" -Deployed (New-DeployedList @(
     "corp agent: corp.load|$long\extensions\grm-corporate-workflow\agents\corp.load.agent.md"

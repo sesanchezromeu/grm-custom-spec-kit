@@ -550,7 +550,7 @@ function Assert-DeployedProvenance {
     # Assert-DeployedSourcePrefix ("deployed-entry-malformed"). Las dos
     # guardias corren sobre la misma lista $DeployedArtifacts en
     # produccion (ver el orquestador de instalacion); si usaran el
-    # mismo texto, la misma entrada malformada aparecería duplicada y
+    # mismo texto, la misma entrada malformada aparece duplicada y
     # sin distincion en el informe final. No se acoplan para deduplicar
     # a proposito: siguen siendo aislables con datos sinteticos, como
     # ya documenta Assert-DeployedSourcePrefix.

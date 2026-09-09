@@ -247,3 +247,15 @@ docs/sessions/
 .github/prompts/speckit.implement.prompt.md
 .github/prompts/speckit.plan.prompt.md
 .github/prompts/speckit.tasks.prompt.md
+
+# ------------------------------------------------------------------
+# GRM Custom Spec Kit — runtime corporativo de la cadena de carga
+# El clon Source of Truth se usa también como runtime. Estos tres
+# artefactos los generan /corp.load y /corp.erase en la máquina local
+# y no se versionan nunca: sin esta regla, ejecutar la cadena aquí
+# ensucia 'git status' y erosiona el criterio de cierre. OBS-P25-01.
+# ------------------------------------------------------------------
+
+/.specify/memory/active-pbi.md
+/.specify/memory/.grm-pbi-sections/
+/.specify/memory/.grm-pbi-payload.json

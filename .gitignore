@@ -248,6 +248,10 @@ docs/sessions/
 .github/prompts/speckit.plan.prompt.md
 .github/prompts/speckit.tasks.prompt.md
 
+# Estado de feature en ejecución (Spec Kit nativo)
+.specify/feature.json
+/features/
+
 # ------------------------------------------------------------------
 # GRM Custom Spec Kit — runtime corporativo de la cadena de carga
 # El clon Source of Truth se usa también como runtime. Estos tres

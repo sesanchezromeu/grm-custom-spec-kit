@@ -236,9 +236,7 @@ The assembled .specify/memory/active-pbi.md follows this structure:
 - Work item ID: <id, or "Not applicable">
 - Work item type: <System.WorkItemType, or "Not applicable">
 - Revision: <rev, or "Not applicable">
-- Changed at: <last change timestamp, or "Not recorded">
 - Retrieved via: <REST API v7.1 | Local file read>
-- Loaded at: <current timestamp if available, otherwise "Not recorded">
 
 ## Original PBI Content (Verbatim)
 <full source content, verbatim, unfenced, heading levels unchanged>

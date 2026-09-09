@@ -199,7 +199,6 @@ if ([System.IO.Path]::GetExtension($Reference).ToLowerInvariant() -ne '.md') {
 # Resolve-Path first: .NET methods resolve relative paths against the process
 # working directory, not the PowerShell location (HZ-06).
 $absolute = (Resolve-Path -LiteralPath $Reference).Path
-$item     = Get-Item -LiteralPath $absolute
 
 # ReadAllText detects and strips a byte order mark if one is present, and
 # leaves every other byte alone.
@@ -421,10 +420,6 @@ $listItems = @($lines | Where-Object { $_ -match '^\s*([-*+]|\d+\.)\s+' }).Count
 # Fragments and payload
 # ---------------------------------------------------------------------------
 
-$changedAt = 'Not recorded'
-try   { $changedAt = $item.LastWriteTimeUtc.ToString('yyyy-MM-ddTHH:mm:ss.fffZ') }
-catch { $changedAt = 'Not recorded' }
-
 $envelope = [ordered]@{
     type           = 'Markdown file'
     reference      = $Reference
@@ -433,9 +428,7 @@ $envelope = [ordered]@{
     work_item_id   = 'Not applicable'
     work_item_type = 'Not applicable'
     revision       = 'Not applicable'
-    changed_at     = $changedAt
     retrieved_via  = 'Local file read'
-    loaded_at      = (Get-Date).ToString('o')
 }
 
 $sourceFragment = @(
@@ -446,9 +439,7 @@ $sourceFragment = @(
     "- Work item ID: $($envelope.work_item_id)",
     "- Work item type: $($envelope.work_item_type)",
     "- Revision: $($envelope.revision)",
-    "- Changed at: $($envelope.changed_at)",
-    "- Retrieved via: $($envelope.retrieved_via)",
-    "- Loaded at: $($envelope.loaded_at)"
+    "- Retrieved via: $($envelope.retrieved_via)"
 ) -join "`n"
 
 $warningsFragment = 'None detected.'

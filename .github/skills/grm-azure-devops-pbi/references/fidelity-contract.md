@@ -26,9 +26,7 @@ value or exits with a non-zero code.
 | Work item ID | `System.Id` |
 | Work item type | `System.WorkItemType` |
 | Revision | `rev` — mandatory, never `Not applicable` |
-| Changed at | `System.ChangedDate` |
 | Retrieved via | `REST API v7.1` |
-| Loaded at | ISO 8601 timestamp of retrieval |
 
 A file is immutable; a work item is not. Without `Revision`, traceability breaks
 at the first edit made after the load.
@@ -140,9 +138,7 @@ go to stderr.
     "work_item_id": "<id>",
     "work_item_type": "Product Backlog Item",
     "revision": "<rev>",
-    "changed_at": "<ISO 8601>",
-    "retrieved_via": "REST API v7.1",
-    "loaded_at": "<ISO 8601>"
+    "retrieved_via": "REST API v7.1"
   },
   "sections": {
     "title": "<string>",

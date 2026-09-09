@@ -84,9 +84,7 @@ function Write-Sections {
         "- Work item ID: $($e.work_item_id)",
         "- Work item type: $($e.work_item_type)",
         "- Revision: $($e.revision)",
-        "- Changed at: $($e.changed_at)",
-        "- Retrieved via: $($e.retrieved_via)",
-        "- Loaded at: $($e.loaded_at)"
+        "- Retrieved via: $($e.retrieved_via)"
     ) -join "`n"
 
     # D-P14b-01. Bold labels, not headings: a '## ' line inside a fragment
@@ -624,9 +622,7 @@ $payload = @{
         work_item_id   = "$($target.id)"
         work_item_type = "$type"
         revision       = "$(Get-Prop $wi 'rev')"
-        changed_at     = "$(Get-Prop $f 'System.ChangedDate')"
         retrieved_via  = 'REST API v7.1'
-        loaded_at      = (Get-Date).ToString('o')
     }
     sections = @{
         title               = "$(Get-Prop $f 'System.Title')"

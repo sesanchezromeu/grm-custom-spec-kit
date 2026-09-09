@@ -21,6 +21,17 @@
                                    13 filas, la diferencia de encabezados
                                    propios entre los dos PBI no debe alterar
                                    el numero de secciones del layout.
+
+                                   Anadido en P27 (OBS-P25-02, opcion B): los
+                                   dos escenarios anteriores leen ademas el
+                                   fragmento source.md directamente y exigen
+                                   que ya no contenga 'Changed at' ni
+                                   'Loaded at', y que haya quedado en 8
+                                   lineas, no 10. Es el fragmento que
+                                   Read-PbiMarkdown.ps1 escribe; la
+                                   comprobacion apunta al mismo fichero que
+                                   la unidad modifico, no al informe agregado
+                                   del layout (L-20).
       3. map-renombrado            copia de Assert-ActivePbi.ps1 con $MAP
                                    renombrado a $SECTIONS. La herramienta
                                    debe fallar de forma ruidosa
@@ -115,8 +126,17 @@ foreach ($case in @(
         $headerLine = $output | Where-Object { $_ -match '^layout=ok headings=(\d+)' } | Select-Object -First 1
         $headingCount = if ($headerLine -and $headerLine -match 'headings=(\d+)') { [int]$Matches[1] } else { -1 }
 
-        $ok = ($exit -eq 0) -and ($headingCount -eq 13) -and ($joined -cnotmatch 'AUSENTE') -and ($joined -match 'omitida')
-        Add-Result $case.Name $ok ("exit={0} headings={1}" -f $exit, $headingCount)
+        # P27, OBS-P25-02: leer el fragmento source.md directamente, no el
+        # informe agregado del layout. El mecanismo que cambio es este
+        # fichero (L-20).
+        $sourceFragmentPath = Join-Path $sectionsPath "source.md"
+        $sourceContent = [System.IO.File]::ReadAllText($sourceFragmentPath, [System.Text.Encoding]::UTF8)
+        $sourceLineCount = @($sourceContent -split "`r?`n" | Where-Object { $_ -ne '' }).Count
+        $noTimestamps = ($sourceContent -notmatch 'Changed at') -and ($sourceContent -notmatch 'Loaded at')
+        $sourceLineOk = ($sourceLineCount -eq 8)
+
+        $ok = ($exit -eq 0) -and ($headingCount -eq 13) -and ($joined -cnotmatch 'AUSENTE') -and ($joined -match 'omitida') -and $noTimestamps -and $sourceLineOk
+        Add-Result $case.Name $ok ("exit={0} headings={1} source_lines={2} sin_timestamps={3}" -f $exit, $headingCount, $sourceLineCount, $noTimestamps)
     }
     catch {
         Add-Result $case.Name $false $_.Exception.Message

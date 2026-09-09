@@ -660,6 +660,19 @@ Mitigation:
 
 Architecture and governance review before approval.
 
+## Risk 5
+
+Spec Kit publishes a version that changes behavior GRM-SCK depends on,
+without advance notice.
+
+Mitigation:
+
+Reactive detection and non-blocking advisory at install time (see
+`docs/architecture.md` D08). No proactive version-compatibility matrix is
+maintained (PA-01, closed by D-P30-02): GRM cannot predict Spec Kit's
+release cadence, so compatibility is verified when the installer is next
+revised, not asserted ahead of time.
+
 ---
 
 # 17. Release Readiness Checklist

@@ -448,6 +448,24 @@ preset reconciliation for the skills-mode layout.
 
 Referenced externally as D-01 in `GRM-SCK_Propuesta_Skills_v1.md`.
 
+## D08 - Spec Kit Version Policy Is Reactive, Not Predictive (D-P30-02)
+
+GRM has no control over Spec Kit's release roadmap or cadence. Declaring a
+fixed set of "supported" future Spec Kit versions would be speculative, not
+verifiable, and would misrepresent a guarantee GRM cannot actually make.
+
+Instead, the installer validates against the Spec Kit version present at
+installation time (detected via `specify --version`) and compares it to the
+version validated in the Source of Truth. A mismatch produces a
+non-blocking advisory (`Write-SpecKitVersionAdvisory`) rather than a
+supported-versions matrix; installation proceeds and the operator is asked
+to verify compatibility. Support for a given Spec Kit version is therefore
+established reactively, at the point the installer is next revised — never
+asserted in advance for versions not yet released.
+
+Referenced externally as D-P30-02, closing open point PA-01 in
+`GRM-SCK_Plan_Adaptacion_Instalador_v1.md`.
+
 ---
 
 # 9. Validation Status

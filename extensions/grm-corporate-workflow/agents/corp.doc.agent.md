@@ -82,6 +82,17 @@ This agent runs inside a project generated or customized by GRM Custom Spec Kit.
 Do not assume that presets or extensions are available at runtime.
 The command must work from the project root using the runtime files available in the target project.
 
+### Mandatory Corporate Constitution Check
+
+Before reading the required inputs, run this command from the repository root:
+
+powershell -NoProfile -ExecutionPolicy Bypass -File .github\skills\_shared\scripts\Assert-CorporateConstitution.ps1
+
+The script prints the constitution's full content and ends with `constitution=ok` or `constitution=failed`. Read the script's last line. Continue only on `constitution=ok`. Do not read .specify/memory/constitution.md yourself; the script's printed content is the only version you consult.
+
+If the script prints `constitution=failed`, or exits with a code other than 0, stop and report:
+Corporate constitution not available. Ensure .specify/memory/constitution.md exists and is not empty before running /corp.doc.
+
 ### Required Inputs
 
 The agent expects to run from the project root.

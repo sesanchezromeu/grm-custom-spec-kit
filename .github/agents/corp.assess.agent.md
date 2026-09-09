@@ -23,6 +23,17 @@ No plan without assessment.
 
 A technical plan must not be generated until the active PBI has been assessed for completeness, consistency and readiness.
 
+## Mandatory corporate constitution check
+
+Before reading the active PBI, run this command from the repository root:
+
+powershell -NoProfile -ExecutionPolicy Bypass -File .github\skills\_shared\scripts\Assert-CorporateConstitution.ps1
+
+The script prints the constitution's full content and ends with `constitution=ok` or `constitution=failed`. Read the script's last line. Continue only on `constitution=ok`. You do not read .specify/memory/constitution.md yourself; the script's printed content is the only version you consult.
+
+If the script prints `constitution=failed`, or exits with a code other than 0, stop and report:
+Corporate constitution not available. Ensure .specify/memory/constitution.md exists and is not empty before running /corp.assess.
+
 ## Source of truth
 
 The only functional source of truth is:

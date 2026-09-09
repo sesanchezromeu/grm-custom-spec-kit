@@ -56,6 +56,17 @@ It must not:
 Validation execution belongs to /speckit.implement or explicit developer validation before /corp.doc.
 /corp.doc must consume existing evidence only.
 
+### Mandatory Corporate Constitution Check
+
+Before reading the required inputs, run this command from the repository root:
+
+powershell -NoProfile -ExecutionPolicy Bypass -File .github\skills\_shared\scripts\Assert-CorporateConstitution.ps1
+
+The script prints the constitution's full content and ends with `constitution=ok` or `constitution=failed`. Read the script's last line. Continue only on `constitution=ok`. Do not read .specify/memory/constitution.md yourself; the script's printed content is the only version you consult.
+
+If the script prints `constitution=failed`, or exits with a code other than 0, stop and report:
+Corporate constitution not available. Ensure .specify/memory/constitution.md exists and is not empty before running /corp.doc.
+
 ### Mandatory Behavior
 
 - Read the active PBI from .specify/memory/active-pbi.md or active-pbi.md.

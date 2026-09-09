@@ -22,6 +22,17 @@ Its sole purpose is to create a governed feature specification bridge that allow
 This command also prepares the native Spec Kit active feature context by creating or updating:
 .specify/feature.json
 
+##### Mandatory Corporate Constitution Check
+
+Before verifying the required input context, run this command from the repository root:
+
+powershell -NoProfile -ExecutionPolicy Bypass -File .github\skills\_shared\scripts\Assert-CorporateConstitution.ps1
+
+The script prints the constitution's full content and ends with `constitution=ok` or `constitution=failed`. Read the script's last line. Continue only on `constitution=ok`. Do not read .specify/memory/constitution.md yourself; the script's printed content is the only version you consult.
+
+If the script prints `constitution=failed`, or exits with a code other than 0, stop and report:
+Corporate constitution not available. Ensure .specify/memory/constitution.md exists and is not empty before running /corp.plan.
+
 ##### Required Input Context
 
 Before proceeding, verify that the following file exists:

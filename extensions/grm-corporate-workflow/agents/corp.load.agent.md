@@ -111,11 +111,14 @@ Do not continue with synthetic content.
 #### Mandatory execution order
 
 When invoked, you MUST execute these steps in order:
+- Verify the corporate constitution is loaded by running this command from the repository root:
+
+  powershell -NoProfile -ExecutionPolicy Bypass -File .github\skills\_shared\scripts\Assert-CorporateConstitution.ps1
+
+  The script prints the constitution's full content and ends with `constitution=ok` or `constitution=failed`. You do not read .specify/memory/constitution.md yourself; the script's printed content is the only version you consult.
+- Read the script's last line. Continue only on `constitution=ok`.
 - Perform the mandatory corporate context reset by running this command from the repository root, before any retrieval:
-
-  powershell -NoProfile -ExecutionPolicy Bypass -File .github\skills\_shared\scripts\Reset-ActiveContext.ps1
-
-  That script is the /corp.erase policy in executable form. It snapshots features/ before touching anything, writes the empty-state stub, ensures features/ exists, removes .specify/feature.json if present, removes the retrieval artifacts of the previous load (.specify/memory/.grm-pbi-sections/ and .specify/memory/.grm-pbi-payload.json) if present, and computes every verification line. You do not reset anything by hand and you do not add checks of your own around it.
+  [... bloque existente sin cambios ...]
 - Read the script's last line. Continue only on `reset=ok`.
 - Load the source skill corresponding to the provided flag.
 - Follow the skill's procedure. Its scripts retrieve the source, assemble `.specify/memory/active-pbi.md` and verify it.
@@ -123,6 +126,9 @@ When invoked, you MUST execute these steps in order:
 - Only then report success.
 
 The `Reference` field carries the reference as the source skill emitted it, not the string the user typed. For `--backlog` the resolver normalizes proxy hosts and the several accepted URL shapes, so a normalized reference that differs from the input is the expected outcome, never a load failure.
+
+If the constitution script prints `constitution=failed`, or exits with a code other than 0, STOP and report:
+Corporate constitution not available: PBI was not loaded. Ensure .specify/memory/constitution.md exists and is not empty, then run /corp.load again.
 
 If the reset script prints `reset=failed`, or exits with a code other than 0, STOP and report:
 Corporate context reset failed: PBI was not loaded. Resolve the reset issue and run /corp.load again.

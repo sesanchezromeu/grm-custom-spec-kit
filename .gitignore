@@ -263,3 +263,15 @@ docs/sessions/
 /.specify/memory/active-pbi.md
 /.specify/memory/.grm-pbi-sections/
 /.specify/memory/.grm-pbi-payload.json
+
+# ------------------------------------------------------------------
+# GRM Custom Spec Kit — catalogo de backlogs del operador
+# .specify/grm-backlog.yml contiene identificadores reales de
+# organizacion y proyecto de Azure DevOps de Grupo Romeu. Este
+# repositorio es publico: el catalogo se mantiene local a la maquina
+# del operador y se traslada manualmente a cada instalacion nueva de
+# la personalizacion. Ver docs/user-guide.md (paso de operador),
+# OBS-P31-01.
+# ------------------------------------------------------------------
+
+/.specify/grm-backlog.yml

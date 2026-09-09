@@ -178,9 +178,15 @@ if (Test-Path -LiteralPath $PAYLOAD) {
 
 $activeReady = $false
 if (Test-Path -LiteralPath $ACTIVE_PBI -PathType Leaf) {
-    $abs  = (Resolve-Path -LiteralPath $ACTIVE_PBI).Path
-    $text = ([System.IO.File]::ReadAllText($abs, [System.Text.Encoding]::UTF8) -replace "`r`n", "`n").TrimEnd("`n")
-    $activeReady = ($text -ceq "# Active PBI`nNo PBI loaded.")
+    try {
+        $abs  = (Resolve-Path -LiteralPath $ACTIVE_PBI).Path
+        $text = ([System.IO.File]::ReadAllText($abs, [System.Text.Encoding]::UTF8) -replace "`r`n", "`n").TrimEnd("`n")
+        $activeReady = ($text -ceq "# Active PBI`nNo PBI loaded.")
+    }
+    catch {
+        $activeReady = $false
+        [Console]::Error.WriteLine("Active PBI stub could not be verified: $_")
+    }
 }
 
 $featuresExists = Test-Path -LiteralPath $FEATURES_DIR -PathType Container

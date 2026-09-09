@@ -544,13 +544,26 @@ function Assert-DeployedProvenance {
     # tiene en destino el mismo contenido que su origen en el SoT.
     # Acumula divergencias en la lista Missing (patron existente).
     # Cumple CA-02 / PC-04.
+    #
+    # Entrada malformada (OBS-P21-02, D-P28-06: b): reporta con su
+    # propio texto ("provenance-entry-malformed"), distinto del de
+    # Assert-DeployedSourcePrefix ("deployed-entry-malformed"). Las dos
+    # guardias corren sobre la misma lista $DeployedArtifacts en
+    # produccion (ver el orquestador de instalacion); si usaran el
+    # mismo texto, la misma entrada malformada aparecería duplicada y
+    # sin distincion en el informe final. No se acoplan para deduplicar
+    # a proposito: siguen siendo aislables con datos sinteticos, como
+    # ya documenta Assert-DeployedSourcePrefix.
     param(
         [System.Collections.Generic.List[string]]$Deployed,
         [ref]$Missing
     )
     foreach ($entry in $Deployed) {
         $parts = $entry -split '\|', 3
-        if ($parts.Count -lt 3) { continue }
+        if ($parts.Count -lt 3) {
+            $Missing.Value += "provenance-entry-malformed: $entry"
+            continue
+        }
         $from = $parts[1]
         $to   = $parts[2]
 

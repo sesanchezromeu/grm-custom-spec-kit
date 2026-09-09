@@ -16,6 +16,8 @@
 
     Cobertura actual:
       P5a  Assert-DeployedSourcePrefix (OBS-P2a-01)
+      P5a2 Assert-DeployedProvenance, rama de entrada malformada
+           (OBS-P21-02, D-P28-06: b) -- cerrada en P28
       P5b  New-InstallationReport, subseccion ### Skills (D-P21-01c,
            D-P21-03a, D-P21-04) y regresion de Assert-SkillShape
            (D-P21-08: sigue lanzando en camino de fallo, y en exito
@@ -41,7 +43,7 @@ $resolvedBootstrap = (Resolve-Path -LiteralPath $BootstrapPath).ProviderPath
 $tokens = $null
 $ast = [System.Management.Automation.Language.Parser]::ParseFile($resolvedBootstrap, [ref]$tokens, [ref]$null)
 
-$targetFunctions = @("Assert-DeployedSourcePrefix", "Assert-SkillShape", "Read-SkillFrontmatter", "New-InstallationReport")
+$targetFunctions = @("Assert-DeployedSourcePrefix", "Assert-DeployedProvenance", "Assert-SkillShape", "Read-SkillFrontmatter", "New-InstallationReport")
 $found = @{}
 
 foreach ($fn in $ast.FindAll({ param($node) $node -is [System.Management.Automation.Language.FunctionDefinitionAst] }, $true)) {
@@ -118,6 +120,53 @@ function Invoke-Scenario {
                 break
             }
         }
+    }
+    if ($ok -and $ExpectedSubstring) {
+        $hit = @($added | Where-Object { $_ -like "*$ExpectedSubstring*" })
+        if ($hit.Count -eq 0) {
+            $ok = $false
+            $reason = "ninguna entrada nueva contiene '$ExpectedSubstring'. Entradas reales: $($added -join '; ')"
+        }
+    }
+
+    if ($ok) {
+        Write-Host "PASS  $Name  (Missing +$($added.Count))"
+    } else {
+        Write-Host "FAIL  $Name -- $reason"
+        $script:Failures++
+    }
+}
+
+function Invoke-ProvenanceScenario {
+    # Mismo patron que Invoke-Scenario, para Assert-DeployedProvenance
+    # (OBS-P21-02). Guardia distinta -- compara contenido, no prefijo --
+    # y su firma no lleva SourceRepoPath.
+    param(
+        [string]$Name,
+        [System.Collections.Generic.List[string]]$Deployed,
+        [string[]]$PreexistingMissing = @(),
+        [int]$ExpectedNewCount,
+        [string]$ExpectedSubstring = $null
+    )
+    $script:ScenarioCount++
+
+    $missing = @()
+    foreach ($m in $PreexistingMissing) { $missing += $m }
+    $before = $missing.Count
+
+    Assert-DeployedProvenance -Deployed $Deployed -Missing ([ref]$missing)
+
+    $added = @($missing | Select-Object -Skip $before)
+    $ok = $true
+    $reason = ""
+
+    if ($added.Count -ne $ExpectedNewCount) {
+        $ok = $false
+        $reason = "se esperaban $ExpectedNewCount entradas nuevas en Missing y hubo $($added.Count): $($added -join '; ')"
+    }
+    if ($ok -and $missing.Count -lt $before) {
+        $ok = $false
+        $reason = "se perdieron entradas preexistentes de Missing"
     }
     if ($ok -and $ExpectedSubstring) {
         $hit = @($added | Where-Object { $_ -like "*$ExpectedSubstring*" })
@@ -320,11 +369,22 @@ Invoke-Scenario -Name "diferencia-solo-de-caja" -SourceRepoPath $long -ExpectedN
     "corp agent: corp.load|$($long.ToUpper())\extensions\grm-corporate-workflow\agents\corp.load.agent.md|C:\dev\e2e\.github\agents\corp.load.agent.md"
 ))
 
-# 7. Entrada sin los tres campos. Assert-DeployedProvenance la salta en
-#    silencio; aqui se reporta (ver nota de OBS-P21-02): una entrada
-#    malformada no la verifica nadie, y el silencio sobre lo no
-#    verificado es justo lo que L-12 prohibe.
+# 7. Entrada sin los tres campos, vista desde Assert-DeployedSourcePrefix.
+#    Cierre de OBS-P21-02 (D-P28-06: b): antes, Assert-DeployedProvenance
+#    la saltaba en silencio; ahora tambien reporta, con su propio texto
+#    (ver escenario 7b). Silencio sobre lo no verificado es justo lo que
+#    L-12 prohibe.
 Invoke-Scenario -Name "entrada-malformada" -SourceRepoPath $long -ExpectedNewCount 1 -ExpectedSubstring "deployed-entry-malformed" -Deployed (New-DeployedList @(
+    "corp agent: corp.load|$long\extensions\grm-corporate-workflow\agents\corp.load.agent.md"
+))
+
+# 7b. Simetrico del anterior, ahora desde Assert-DeployedProvenance
+#     (OBS-P21-02, D-P28-06: b). Mensaje distinto a proposito
+#     ("provenance-entry-malformed", no "deployed-entry-malformed"):
+#     las dos guardias corren sobre la misma lista $DeployedArtifacts
+#     en produccion, y con el mismo texto la misma entrada aparecería
+#     duplicada y sin distincion en el informe final.
+Invoke-ProvenanceScenario -Name "entrada-malformada-provenance" -ExpectedNewCount 1 -ExpectedSubstring "provenance-entry-malformed" -Deployed (New-DeployedList @(
     "corp agent: corp.load|$long\extensions\grm-corporate-workflow\agents\corp.load.agent.md"
 ))
 

@@ -93,6 +93,23 @@ The script prints the constitution's full content and ends with `constitution=ok
 If the script prints `constitution=failed`, or exits with a code other than 0, stop and report:
 Corporate constitution not available. Ensure .specify/memory/constitution.md exists and is not empty before running /corp.doc.
 
+### Mandatory Delivery Layout Gate
+
+After the corporate constitution check, run this command from the repository root:
+
+powershell -NoProfile -ExecutionPolicy Bypass -File .github\skills\_shared\scripts\Get-DeliveryLayout.ps1
+
+The script prints a delivery layout inventory and ends with `layout=ok`, `layout=failed` or `layout=error`. Read the script's last line. Do not inspect features/ or the code root yourself; the script's printed inventory is the only source you consult for delivery layout state.
+
+If the script prints `layout=failed`, stop and do NOT generate or update the delivery documentation. Report:
+Delivery layout invalid. Implementation files were found under features/, which holds process documentation only. Move the reported files to the code root and run /corp.doc again.
+Then list the disallowed files exactly as the script reported them.
+
+If the script prints `layout=error`, or exits with code 2, stop and do NOT generate or update the delivery documentation. Report:
+Delivery layout could not be inventoried. Resolve the reported reason before running /corp.doc.
+
+Continue only on `layout=ok`. Use the printed value of `delivered-pbis` when documenting previously delivered PBIs. Do not infer it from any other source.
+
 ### Required Inputs
 
 The agent expects to run from the project root.
@@ -111,7 +128,7 @@ Optional artifacts:
 - features/<feature-folder>/contracts/
 - Test files, if available
 - Validation logs or documented execution evidence
-- frontend/evidence.md or equivalent evidence files, if available
+- Evidence files under the code root, if available
 - Manual validation evidence, if available
 
 ### Active Feature Resolution

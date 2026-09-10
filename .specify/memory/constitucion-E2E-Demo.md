@@ -41,14 +41,11 @@ A PBI is not considered implemented for E2E demo purposes unless it produces a r
 
 Minimum required output:
 
-```text
-frontend/
-├── index.html
-├── styles.css
-├── app.js
-├── README.md
-└── evidence.md
-```
+- an HTML entry point,
+- a stylesheet,
+- application script logic,
+- a README describing how to run it,
+- manual validation evidence.
 
 The delivered application must be executable by opening `index.html` directly in a browser or by running a simple local static server.
 
@@ -126,7 +123,7 @@ The following commands must not create, update, validate or maintain delivery do
 - `/corp.plan`
 
 The only implementation evidence that may be generated before `/corp.doc` is implementation or validation evidence, such as:
-- `frontend/evidence.md`
+- implementation evidence generated during implementation or validation`
 - validation logs
 - manual test evidence
 - screenshots or other evidence explicitly produced during implementation or validation
@@ -183,7 +180,7 @@ Tasks must not include creation, update, validation or maintenance of delivery d
 
 Delivery documentation is outside the responsibility of `/speckit.tasks` and `/speckit.implement`.
 
-The only allowed evidence-related implementation task is to generate or update implementation evidence, such as `frontend/evidence.md`.
+The only allowed evidence-related implementation task is to generate or update implementation evidence.`
 
 Final delivery documentation is generated exclusively by `/corp.doc`.
 
@@ -267,7 +264,7 @@ The previous frontend-lite validation produced a coherent TypeScript feature wit
 
 This constitution corrects that gap by making the runnable browser demo a non-negotiable outcome.
 
-The multi-PBI E2E validation also confirmed that delivery documentation must remain separated from implementation task generation. Without an explicit ownership rule, `/speckit.tasks` may infer delivery documentation tasks from expected feature artifacts. This constitution now makes `/corp.doc` the exclusive owner of final delivery documentation while allowing implementation evidence, such as `frontend/evidence.md`, to be generated before closure.
+The multi-PBI E2E validation also confirmed that delivery documentation must remain separated from implementation task generation. Without an explicit ownership rule, `/speckit.tasks` may infer delivery documentation tasks from expected feature artifacts. This constitution now makes `/corp.doc` the exclusive owner of final delivery documentation while allowing implementation evidence to be generated before closure.`
 
 ## 8. Recommended Use
 

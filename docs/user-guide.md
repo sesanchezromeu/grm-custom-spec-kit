@@ -129,6 +129,31 @@ The workflow is not complete until `corp.doc` has generated the delivery documen
 
 ---
 
+## 4.6 Process Documentation Is Separated From Deliverable Code
+
+`features/` contains process documentation only: `spec.md`, `plan.md`,
+`tasks.md`, validation evidence, the delivery document, and screenshots when
+needed.
+
+Deliverable code never lives under `features/`. It lives under the code root
+declared by your constitution, or under `src/` at the repository root when the
+constitution declares no directory structure. Subdirectories are named after
+the nature of their content, for example `frontend/`, `backend/`, `db/` or
+`tests/`.
+
+When a PBI extends work delivered by an earlier PBI, modify the existing files
+in place under the code root. Do not re-create them elsewhere.
+
+`/corp.plan` reports the layout state in `spec.md`. `/corp.doc` refuses to
+generate the delivery document if implementation files are found under
+`features/`, and lists the files to move. Move them to the code root and run
+`/corp.doc` again.
+
+Delivery documents are dated snapshots. They are never updated by a later PBI:
+a later PBI documents its own changes in its own delivery document.
+
+---
+
 ## 5. Roles and Responsibilities
 
 | Role | Main Responsibilities |

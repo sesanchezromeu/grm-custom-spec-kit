@@ -6,6 +6,26 @@ Status: Release Candidate
 
 ---
 
+## [1.1.0] - 2026-09-10
+
+### Changed
+
+- The corporate constitution no longer prescribes a directory structure.
+  Principle II states the minimum required output by artifact nature instead
+  of by path, so that projects whose constitution is silent about structure
+  fall through to the corporate default rather than to an example layout.
+- Removed the hardcoded `frontend/evidence.md` path from Principle VI,
+  Gate 3 and the validation notes. Evidence is per PBI and is referenced by
+  location.
+
+### Notes
+
+Structure is now declared in a single place: the corporate workflow layer.
+A constitution may still declare its own directory structure, and it is
+respected, provided no implementation file is placed under `features/`.
+
+---
+
 ## [1.0.0] - 2026-07-22
 
 ### Release Summary

@@ -1,10 +1,50 @@
 # Changelog
 
-Version: 1.3
-Last Updated: 2026-09-08
+Version: 1.4
+Last Updated: 2026-09-10
 Status: Release Candidate
 
 All notable changes to the GRM Corporate Workflow Extension are documented in this file.
+
+---
+
+## [1.4.0] - 2026-09-10
+
+### Status
+
+Release Candidate
+
+### Overview
+
+Process documentation and deliverable code are now separated structurally.
+`features/` holds SDD process documentation only; implementation files live
+under a code root at repository level. The separation is enforced by a shared
+script, not by prose: the same rule existed in the corporate constitution
+before this release and was honoured in one run and ignored in the next.
+
+### Added
+
+- `skills/_shared/scripts/Get-DeliveryLayout.ps1`. Inventories `features/` and
+  the code root and ends with `layout=ok`, `layout=failed` or `layout=error`.
+  Reports disallowed files under `features/` by path, including on the failure
+  branch. Files permitted under `features/`: `.md` plus image formats.
+- `corp.plan` runs the script before planning, reports the layout state and
+  the previously delivered PBIs in a new Delivery Layout section of `spec.md`,
+  and does not stop on `layout=failed`.
+- `corp.doc` runs the script as a delivery gate and refuses to generate or
+  update the delivery document on `layout=failed` or `layout=error`.
+- Delivery documents now carry a snapshot notice and the list of previously
+  delivered PBIs. They are dated snapshots and are never updated by a later PBI.
+
+### Changed
+
+- `corp.doc` no longer names `frontend/evidence.md`. Evidence is referenced by
+  location, not by a hardcoded path.
+
+### Compatibility
+
+Spec Kit: Current supported version.
+Governance Preset: grm-corporate-governance v1.1.0.
 
 ---
 

@@ -33,6 +33,21 @@ The script prints the constitution's full content and ends with `constitution=ok
 If the script prints `constitution=failed`, or exits with a code other than 0, stop and report:
 Corporate constitution not available. Ensure .specify/memory/constitution.md exists and is not empty before running /corp.plan.
 
+##### Mandatory Delivery Layout Check
+
+After the corporate constitution check, run this command from the repository root:
+
+powershell -NoProfile -ExecutionPolicy Bypass -File .github\skills\_shared\scripts\Get-DeliveryLayout.ps1
+
+The script prints a delivery layout inventory and ends with `layout=ok`, `layout=failed` or `layout=error`. Read the script's last line. Do not inspect features/ or the code root yourself; the script's printed inventory is the only source you consult for delivery layout state.
+
+If the script prints `layout=error`, or exits with code 2, stop and report:
+Delivery layout could not be inventoried. Resolve the reported reason before running /corp.plan.
+
+If the script prints `layout=failed`, do NOT stop. Continue, and record the reported disallowed files in the Delivery Layout section of spec.md. /corp.plan does not move files and does not fix the layout; the layout gate is enforced by /corp.doc before delivery.
+
+Use the printed values of `src-present`, `src-subdirectories` and `delivered-pbis` to fill the Delivery Layout section of spec.md. Do not infer any of them from any other source.
+
 ##### Required Input Context
 
 Before proceeding, verify that the following file exists:
@@ -151,6 +166,23 @@ Enable /speckit.plan while preserving the approved PBI as the functional authori
 - This document does not introduce requirements.
 - Any scope change must be handled through the Product Owner process.
 - This document exists solely to bootstrap the standard Spec Kit planning workflow.
+
+### Delivery Layout
+
+- Code root: [directory declared by the corporate constitution; if the constitution declares no code directory structure, use src/]
+- Process documentation root: features/<feature>/
+- Existing product: [yes if delivered-pbis is not none, otherwise no]
+- Previously delivered PBIs: [value of delivered-pbis]
+- Code root state: [value of src-present, and src-subdirectories when present]
+- Layout status at planning time: [layout=ok, or layout=failed followed by the reported disallowed files]
+
+Rules:
+- No implementation file may be created or modified under features/. features/ holds process documentation only.
+- Implementation files belong under the code root, in subdirectories named after their nature, for example frontend/, backend/, api/, db/, tests/.
+- If the product already exists, modify existing files in place under the code root. Do not duplicate, re-create or re-implement existing artifacts in a new location.
+- All code paths written in this document are repository-relative and canonical, never relative to the feature folder.
+
+This section reports observed repository state and the corporate layout rules. It does not define scope and does not introduce requirements.
 
 ### Description
 

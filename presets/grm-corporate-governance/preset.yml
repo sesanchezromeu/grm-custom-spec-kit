@@ -2,7 +2,7 @@ id: grm-corporate-governance
 
 name: GRM Corporate Governance Preset
 
-version: 1.0.0
+version: 1.1.0
 
 description: >
   Corporate governance preset for Spec Kit that enforces the
@@ -35,10 +35,10 @@ native_preserved:
 
 metadata:
   release_status: Release Candidate
-  last_updated: 2026-07-22
+  last_updated: 2026-09-10
   governance_model: PBI-first
   planning_model: Corporate Bootstrap Guard
-  documentation_version: 1.0
+  documentation_version: 1.1
 
 governance:
   blocked_commands:

@@ -176,6 +176,40 @@ undeclared skill is never named by any agent.
 
 ---
 
+## AP06 - Process Documentation Is Separated From Deliverable Code
+
+`features/` holds SDD process documentation only. No implementation file is
+created or modified under `features/` or any of its subdirectories.
+
+Deliverable code lives in a code root at repository level, resolved by a
+three-level hierarchy:
+
+1. Invariant: nothing under `features/` is code. Not overridable.
+2. The directory structure declared by the corporate constitution, when it
+   declares one, provided it does not violate the invariant.
+3. Default, when the constitution is silent: `src/` at the repository root,
+   with subdirectories named after the nature of their content, for example
+   `frontend/`, `backend/`, `api/`, `db/`, `tests/`.
+
+Consequence for incremental work: the product is one, and each PBI is an
+increment over it. A PBI that extends previous work modifies existing files
+in place under the code root. It does not duplicate or re-implement them in
+a new location.
+
+The invariant is not enforced by prose. `Get-DeliveryLayout.ps1` under
+`skills/_shared/scripts/` inventories the tree and ends with
+`layout=ok`, `layout=failed` or `layout=error`. `/corp.plan` reports the
+state in `spec.md`; `/corp.doc` refuses to generate delivery documentation on
+`layout=failed`. A rule stated only in an agent or in the constitution does
+not govern behaviour (L-02): this same rule existed in the constitution
+before P32, and was honoured in one run and ignored in the next.
+
+Delivery documentation and evidence are per PBI and immutable. A later PBI
+never rewrites the delivery documentation of an earlier one; it documents its
+own changes in its own delivery document.
+
+---
+
 # 3. Reference Architecture
 
 ```text

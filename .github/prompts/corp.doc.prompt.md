@@ -56,6 +56,15 @@ It must not:
 Validation execution belongs to /speckit.implement or explicit developer validation before /corp.doc.
 /corp.doc must consume existing evidence only.
 
+### Terminal Discipline for Mandatory Checks
+
+The checks below are mandatory gates, not optional diagnostics. Each one must run in a terminal you have not used for any other command in this session — a prior command's heredoc, unterminated string, or interactive REPL can silently redirect the check's output or swallow it, and the failure looks like an unrelated terminal glitch rather than a check that never ran.
+
+For each check below:
+- Open a new terminal for that command alone.
+- Paste the command's literal output into your response before declaring the corresponding `ok` state. A paraphrase or a claim that the check passed is not sufficient; the literal last line (`constitution=ok/failed`, `layout=ok/failed/error`) must appear in your response.
+- If the command produces no recognizable marker, produces unexpected output, or the terminal appears unresponsive or in an unexpected state, do not continue by any other means, including reading the target file yourself. Stop and report that the check could not be completed and why, exactly as you would report `failed` or `error`.
+
 ### Mandatory Corporate Constitution Check
 
 Before reading the required inputs, run this command from the repository root:

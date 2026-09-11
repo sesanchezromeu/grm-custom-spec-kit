@@ -82,6 +82,16 @@ Required workflow:
 
 If a valid corporate bootstrap specification is found, continue with the standard planning workflow.
 
+### Delivery Layout Compliance
+
+Read the Delivery Layout section of the corporate bootstrap `spec.md` before generating `plan.md`.
+
+The `Project Structure` section of `plan.md`, in its `Source Code` subsection, MUST use the declared `Code root` value verbatim as the root of every implementation file path. Do not substitute the repository root or any other location, even when the feature is small or self-contained.
+
+This requirement is declarative and is not mechanically enforced by this agent. `/corp.doc` does not verify code root placement; it only verifies that no implementation file exists under `features/`.
+
+---
+
 ## Pre-Execution Checks
 
 **Check for extension hooks (before planning)**:

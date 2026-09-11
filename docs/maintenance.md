@@ -609,6 +609,30 @@ session, and so that nobody spends a sixth attempt rediscovering it:
   its favour: a host that rewrites two ready-formed values may equally
   reformat a pasted block.
 
+- **Host limit - native scripts not governed by a mandatory gate.** When the
+  terminal is left in a broken state, the agent may replace the execution of a
+  native script (`setup-plan.ps1`, `setup-tasks.ps1`, `check-prerequisites.ps1`
+  and similar) with manual work, without declaring it as a decision and without
+  opening a fresh terminal to retry. Observed twice in a single session, with
+  no state damage in either case: both scripts were read-only context helpers
+  and the manual result was verified correct afterwards.
+
+  Accepted as residual risk, deliberately. The flow invariant does not depend
+  on these scripts; it is held by the two mandatory gates,
+  `Assert-CorporateConstitution.ps1` and `Get-DeliveryLayout.ps1`, which
+  executed correctly throughout every terminal incident observed. A declarative
+  instruction was rejected because it would require the agent to report its own
+  non-compliance at the moment of non-compliance, with no durable artifact to
+  check it against afterwards - unlike the code-root rule, whose compliance is
+  visible in the file tree. A mechanical wrapper was rejected because it would
+  run through the same terminal that is broken, making its silence
+  indistinguishable from the silence of the script it wraps.
+
+  The effective control is on the operator: validate with raw terminal output,
+  never with the agent's narration, and require a retry in a fresh terminal
+  whenever a non-governed script produces no legible output. Reopen only if a
+  real state desynchronization is ever traced to this pattern.
+
 Recently closed, kept here briefly so the correction is traceable:
 
 - The runtime synchronization helper for `skills/` is now versioned with the
